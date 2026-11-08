@@ -76,5 +76,20 @@ window.DongBoundary = (function () {
     for (var i = 0; i < list.length; i++) if (norm(list[i]) === n) return true;
     return false;
   }
-  return { show: show, bbox: bbox, validAdm: validAdm };
+  /* 집계 원 자리 : 고른 지역에서 가장 큰 조각의 무게중심 [lng, lat] */
+  function center(guCode, dongName, admName) {
+    var rings = ringsOf(guCode, dongName, admName);
+    if (!rings || !rings.length) return null;
+    var best = null, bestA = -1;
+    rings.forEach(function (r) {
+      var a = 0, cx = 0, cy = 0;
+      for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
+        var f = r[j][0] * r[i][1] - r[i][0] * r[j][1];
+        a += f; cx += (r[j][0] + r[i][0]) * f; cy += (r[j][1] + r[i][1]) * f;
+      }
+      if (Math.abs(a) > bestA && a !== 0) { bestA = Math.abs(a); best = [cx / (3 * a), cy / (3 * a)]; }
+    });
+    return best;
+  }
+  return { show: show, bbox: bbox, validAdm: validAdm, center: center };
 })();

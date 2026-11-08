@@ -107,6 +107,7 @@ $(function () {
     var pad = mode === 'cluster' ? 0.002 : 0.0005;        // 화면 바깥 조금 (건물 단위는 약 50m)
     var q = viewParams();
     if (state.adms.length) { q.gu = state.gu; q.adms = state.adms; }   // 행정동을 고르면 그 행정동 건물만 (묶음 · 핀)
+    else if (state.dong) { q.gu = state.gu; q.dong = state.dong; }     // 법정동을 고르면 그 법정동 건물만
     q.bbox = [sw.lng() - pad, sw.lat() - pad, ne.lng() + pad, ne.lat() + pad].map(function (v) { return v.toFixed(5); }).join(',');
     var req;
     if (mode === 'cluster') {
@@ -171,6 +172,28 @@ $(function () {
       MapApi.gus(params).done(function (list) {
         (list || []).forEach(function (g) { if (rings[g.sggCd]) g.ring = rings[g.sggCd]; });
         MapMarker.renderGu(list); setupLock(list);
+      });
+    });
+    loadAreaLabels();
+  }
+
+  /* 동 집계 원 : 법정동 · 행정동을 고르면 구 원 대신 "구로동 위험 N곳" / "구로1동 위험 N곳" (구 단위 줌에서만, 확대하면 도넛).
+     숫자는 gus.do 를 그 지역 조건(gu + dong 또는 gu + adms)으로 불러 받는다 = 구 원과 같은 기준 */
+  var areaSeq = 0;
+  function loadAreaLabels() {
+    var seq = ++areaSeq;
+    var targets = [];
+    if (state.adms.length) state.adms.forEach(function (k) { targets.push({ name: admOfKey(k), dong: '', adm: admOfKey(k), q: { gu: state.gu, adms: [k] } }); });
+    else if (state.dong) targets.push({ name: state.dong, dong: state.dong, adm: '', q: { gu: state.gu, dong: state.dong } });
+    if (!targets.length || !window.DongBoundary || !DongBoundary.center) { MapMarker.renderArea([]); return; }
+    var out = [], left = targets.length;
+    targets.forEach(function (t) {
+      var c = DongBoundary.center(state.gu, t.dong, t.adm ? [t.adm] : []);
+      MapApi.gus($.extend(viewParams(), t.q)).always(function (list) {
+        if (seq !== areaSeq) return;                                // 그새 다른 지역을 골랐으면 버림
+        var g = $.isArray(list) && list[0];
+        if (c) out.push({ name: t.name, lat: c[1], lng: c[0], riskCount: g ? g.riskCount : 0, checkedCnt: g ? g.checkedCnt : 0 });
+        if (--left === 0) MapMarker.renderArea(out);
       });
     });
   }
@@ -238,6 +261,7 @@ $(function () {
     $map.closest('.map-wrap').toggleClass('show-labels', z >= C.ZOOM.MAX);
     if (mode === 'gu') { state.pointSeq++; state.lastRaw = null; MapMarker.clear(); }
     MapMarker.showGu(mode === 'gu');
+    if (MapMarker.showArea) MapMarker.showArea(mode === 'gu');
     renderLegend(mode);
   }
   function renderLegend(mode) {
@@ -303,7 +327,8 @@ $(function () {
       if (m.kind === 'cluster') flyTo(m.data.lat, m.data.lng, Math.max(C.ZOOM.BUILDING, zoomNow() + 1));   // 묶음 → 확대
       else selectBuilding(m.data, false);
     },
-    onGuClick: function (g) { flyTo(g.lat, g.lng, C.ZOOM.CLUSTER_MIN); }
+    onGuClick: function (g) { flyTo(g.lat, g.lng, C.ZOOM.CLUSTER_MIN); },
+    onAreaClick: function (a) { flyTo(a.lat, a.lng, C.ZOOM.CLUSTER_MIN); }   // 동 집계 원을 누르면 확대 → 도넛
   });
   MapLayer.init({ onRun: runAnalysis, onToggle: resize });
   MapResult.init({ getParams: listParams, onSelect: function (b) { selectBuilding(b, true); } });
@@ -396,6 +421,8 @@ $(function () {
     else { var g = guOf(state.gu); flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.GU : C.ZOOM.INIT); }
     if (guChanged) loadDongs(reopenEmd); else $('#dongBtn span').text(dongLabel());
     renderScope();
+    loadAreaLabels();                                              // 동 집계 원 (구로동 위험 N곳)
+    onLevelChanged();                                              // 표시 방식 · 범례 다시
     scheduleLoad();                                                // 행정동 조건이 바뀌었으니 묶음 · 핀 다시
     loadChecked();
     if (state.analyzed) MapResult.load(true);
@@ -447,6 +474,8 @@ $(function () {
     if (pbox) flyTo((pbox[1] + pbox[3]) / 2, (pbox[0] + pbox[2]) / 2, C.ZOOM.SEL_GU);
     else flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.GU : C.ZOOM.INIT);
     renderScope();
+    loadAreaLabels();
+    onLevelChanged();
     scheduleLoad();
     loadChecked();
     if (state.analyzed) MapResult.load(true);

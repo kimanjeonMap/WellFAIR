@@ -216,7 +216,29 @@ window.MapMarker = (function () {
   function showGu(show, force) {
     if (show === guShown && !force) return;
     guShown = show;
-    gus.forEach(function (g) { g.polygon.setMap(show && guVisible(g) ? map : null); g.label.setMap(show ? map : null); });
+    gus.forEach(function (g) { g.polygon.setMap(show && guVisible(g) ? map : null); g.label.setMap(show && !guFilter.dong ? map : null); });   // 동을 고르면 구 원 대신 동 원
+  }
+  /* ---------- 동 집계 원 (구 원과 같은 모양 · 경계선과 같은 하늘색 테두리). 구 단위 줌에서만 ---------- */
+  var areas = [], areaShown = true;
+  function renderArea(list) {
+    if (noMap()) return;
+    areas.forEach(function (m) { m.setMap(null); });
+    areas = [];
+    (list || []).forEach(function (a) {
+      var el = document.createElement('div');
+      el.className = 'mk-inv kgu';
+      el.style.borderColor = '#00D1FF';
+      el.innerHTML = '<b>' + esc(a.name) + '</b>위험 ' + Common.num(a.riskCount) + '곳'
+        + (a.checkedCnt > 0 ? '<small>현장 확인 ' + Common.num(a.checkedCnt) + '곳</small>' : '');
+      var mk = new naver.maps.Marker({ position: LL(a.lat, a.lng), icon: { content: el, anchor: new naver.maps.Point(48, 48) }, zIndex: 6 });
+      naver.maps.Event.addListener(mk, 'click', function () { if (handlers.onAreaClick) handlers.onAreaClick(a); });
+      areas.push(mk);
+    });
+    showArea(handlers.mode ? handlers.mode() === 'gu' : true);
+  }
+  function showArea(show) {
+    areaShown = show;
+    areas.forEach(function (m) { m.setMap(show ? map : null); });
   }
   function filterGu(code, hasDong) {
     guFilter = { code: code ? String(code) : '', dong: !!hasDong };
@@ -249,7 +271,7 @@ window.MapMarker = (function () {
   function init(m, h) { map = m; handlers = h || {}; }
 
   return {
-    init: init, render: render, clear: clear, select: select, renderGu: renderGu, showGu: showGu, filterGu: filterGu, renderChecked: renderChecked,
+    init: init, render: render, clear: clear, select: select, renderGu: renderGu, showGu: showGu, filterGu: filterGu, renderArea: renderArea, showArea: showArea, renderChecked: renderChecked,
     levelOf: levelOf, clusterSvg: clusterSvg, pointSvg: pointSvg, svgUri: svgUri
   };
 })();
