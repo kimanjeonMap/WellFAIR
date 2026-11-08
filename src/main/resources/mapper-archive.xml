@@ -16,12 +16,23 @@
 		WHEN EXISTS (SELECT 1 FROM survey_plan sp WHERE sp.factor_id = f.factor_id) THEN 'DOING'
 		ELSE 'TODO' END)</sql>
 
-	<!-- 내 보관함 건물(factor) 전체 : 다른 쿼리가 FROM 으로 쓴다. gu 가 있으면 그 구의 분석 리스트만 (구청 계정) -->
+	<!-- 같은 건물이 여러 분석 리스트에 저장돼 있어도 가장 최근 저장 1건만 센다 (13단계 : 보관함 목록 · 탭 숫자 · 우선순위에 한 줄).
+	     f = 바깥 쿼리의 vulnerability_factor, 파라미터 userId (+ gu) -->
+	<sql id="latestOnly">
+		AND f.factor_id = (SELECT f2.factor_id FROM vulnerability_factor f2
+		                    JOIN vulnerability_list l2 ON l2.vulnerability_id = f2.vulnerability_id
+		                   WHERE l2.user_id = #{userId} AND l2.is_active = 1 AND f2.bld_id = f.bld_id
+		                   <if test="gu != null and gu != ''">AND l2.sgg_cd = #{gu}</if>
+		                   ORDER BY f2.evaluated_at DESC, f2.factor_id DESC LIMIT 1)
+	</sql>
+
+	<!-- 내 보관함 건물(factor) 전체 : 다른 쿼리가 FROM 으로 쓴다. gu 가 있으면 그 구의 분석 리스트만 (구청 계정). 건물당 최근 1건 -->
 	<sql id="myFactors">
 		FROM vulnerability_factor f
 		JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
 		WHERE l.user_id = #{userId} AND l.is_active = 1
 		<if test="gu != null and gu != ''">AND l.sgg_cd = #{gu}</if>
+		<include refid="mapper-archive.latestOnly"/>
 	</sql>
 
 	<!-- 상단 건수 / 보관함 탭 숫자 (userId, gu) -->
@@ -70,6 +81,9 @@
 		          JOIN vulnerability_list l2 ON l2.vulnerability_id = f2.vulnerability_id
 		          LEFT JOIN bld_resident_stat s2 ON s2.bld_id = f2.bld_id
 		         WHERE l2.user_id = #{userId} AND l2.is_active = 1
+		           AND f2.factor_id = (SELECT f3.factor_id FROM vulnerability_factor f3 JOIN vulnerability_list l3 ON l3.vulnerability_id = f3.vulnerability_id
+		                                WHERE l3.user_id = #{userId} AND l3.is_active = 1 AND f3.bld_id = f2.bld_id
+		                                ORDER BY f3.evaluated_at DESC, f3.factor_id DESC LIMIT 1)
 		           AND (f2.vulnerability_score > f.vulnerability_score
 		             OR (f2.vulnerability_score = f.vulnerability_score AND IFNULL(s2.vuln_hh_cnt, 0) > t.vuln_hh_cnt)
 		             OR (f2.vulnerability_score = f.vulnerability_score AND IFNULL(s2.vuln_hh_cnt, 0) = t.vuln_hh_cnt AND IFNULL(s2.priority_sum, 0) > t.priority_sum)
@@ -81,6 +95,7 @@
 		  JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
 		  JOIN (<include refid="mapper-building.scoredSelect"/>) t ON t.bld_id = f.bld_id
 		 WHERE l.user_id = #{userId} AND l.is_active = 1
+		 <include refid="mapper-archive.latestOnly"/>
 		 <if test="q != null and q != ''">AND (t.addr LIKE CONCAT('%', #{q}, '%') OR t.bld_nm LIKE CONCAT('%', #{q}, '%'))</if>
 		 <!-- ===== [상세 필터] (5-1). 요인 키는 ArchiveService 가 허용 목록으로 걸러서 ${} 로 열 이름에 쓴다 ===== -->
 		 <if test="factors != null and factors.size() > 0 and factorMode == 'any'">
@@ -158,6 +173,11 @@
 		 WHERE l.user_id = #{userId} AND l.is_active = 1 AND f.bld_id = #{bldId}
 		 ORDER BY f.evaluated_at DESC, f.factor_id DESC
 		 LIMIT 1
+	</select>
+
+	<!-- 이 건물의 방문 기록 수 (누가 갔든). 보관함 중복 저장 판정 (13단계 : 0 이면 "저장됨" 안내만, 있으면 점수 갱신) -->
+	<select id="getVisitCount" parameterType="String" resultType="int">
+		SELECT COUNT(*) FROM visit_history vh WHERE vh.bld_id = #{bldId}
 	</select>
 
 	<!-- 이 건물이 담긴 내 현장확인 리스트의 plan (현장 체크 저장용). 없으면 "리스트에 먼저 담아 주세요" -->

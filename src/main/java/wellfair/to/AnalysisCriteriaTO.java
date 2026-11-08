@@ -88,6 +88,11 @@ public class AnalysisCriteriaTO {
 		return (Math.max(page, 1) - 1) * size;
 	}
 
+	/** 목록 page 가 1 미만이면 1 로 (15단계 D-14). Lombok 은 같은 이름의 setter 가 있으면 만들지 않는다 */
+	public void setPage(int page) {
+		this.page = Math.max(1, page);
+	}
+
 	/** bbox 문자열을 min/max 로 풀어 넣는다. 형식이 다르면 범위 없음 */
 	public void applyBbox() {
 		if (bbox == null || bbox.isBlank()) return;

@@ -88,6 +88,10 @@ public class ArchiveDAO {
 		return session.selectOne("mapper-archive.getFactorByBld", p);
 	}
 
+	public int getVisitCount(String bldId) {
+		return session.selectOne("mapper-archive.getVisitCount", bldId);
+	}
+
 	public Long getPlanByBld(long userId, String bldId) {
 		Map<String, Object> p = new HashMap<>();
 		p.put("userId", userId);

@@ -15,6 +15,13 @@
 		 WHERE login_id = #{loginId}
 	</select>
 
+	<!-- user_id 로 1명 (05 인수인계 받는 담당자가 있는 사람인지 · 같은 구인지, 15단계 A-4) -->
+	<select id="getMember" parameterType="long" resultType="wellfair.to.MemberTO">
+		SELECT user_id, login_id, sgg_cd, user_nm, dept_nm, rank_nm
+		  FROM users
+		 WHERE user_id = #{userId}
+	</select>
+
 	<!-- 같은 구 사용자 목록 (05 인수인계 받는 담당자). sggCd 없으면(서울시청) 전체 -->
 	<select id="getUserList" parameterType="String" resultType="wellfair.to.MemberTO">
 		SELECT user_id, login_id, sgg_cd, user_nm, dept_nm, rank_nm

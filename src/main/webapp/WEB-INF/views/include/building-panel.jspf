@@ -45,7 +45,7 @@
   <button type="button" class="btn btn-line" id="btnWhy">이 기준은 왜?</button>
 </div>
 
-<%-- 취약 가구 정보 모달 (02-2-1) : 이름은 성만, 층수·연령대·가구 구성·취약 유형·복지 연계 --%>
+<%-- 취약 가구 정보 모달 (02-2-1) : 순위·가점(툴팁 = 내역), 이름은 성만, 층수·연령대·가구 구성·취약 유형·복지 연계. 순서 = 서버의 "가장 취약한 순" (12단계) --%>
 <div class="modal-bg" id="resModal" data-viewer="<c:out value='${sessionScope.loginMember.deptNm}'/> <c:out value='${sessionScope.loginMember.userNm}'/> <c:out value='${sessionScope.loginMember.rankNm}'/>">
   <div class="modal">
     <div class="modal-head">
@@ -56,7 +56,7 @@
       <div class="rm-notice"><span>🔒 개인정보 열람 기록이 남아요 · <span id="rmViewer"></span></span><span class="muted">업무 목적 외 사용 금지</span></div>
       <p class="rm-legend muted">취약 유형 = 가구원 전체 요인 · <span class="tag benefit">점선</span> = 수급 확인용(기초생활·차상위·기초연금) · 복지 연계 = 행복e음 지원연계 → 처리결과 원본 값</p>
       <table class="rm-tbl">
-        <thead><tr><th>층수</th><th>세대주</th><th>연령대</th><th>가구 구성</th><th>취약 유형</th><th>복지 연계</th></tr></thead>
+        <thead><tr><th>순위</th><th>층수</th><th>세대주</th><th>연령대</th><th>가구 구성</th><th>취약 유형</th><th>복지 연계</th></tr></thead>
         <tbody id="rmRows"></tbody>
       </table>
     </div>

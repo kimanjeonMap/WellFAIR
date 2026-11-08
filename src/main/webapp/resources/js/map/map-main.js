@@ -504,7 +504,8 @@ $(function () {
   renderLegend(modeOf(zoomNow()));
   loadGus();
   loadChecked();
-  /* 05 [지도에서 보기] (map.do?bldId=) : 그 건물로 가서 상세 패널을 연다 */
+  /* 05 [지도에서 보기] (map.do?bldId=) : 그 건물로 가서 상세 패널을 연다. 구청 계정이 남의 구 건물을 열려 하면 서버가 bldId 를 비우고 안내만 (15단계 A-2) */
+  if (window.OPEN_MSG) Common.toast(window.OPEN_MSG);
   if (window.OPEN_BLD) {
     MapApi.building($.extend({}, criteria(), { bldId: window.OPEN_BLD })).done(function (d) {
       if (d && d.building) selectBuilding(d.building, true);

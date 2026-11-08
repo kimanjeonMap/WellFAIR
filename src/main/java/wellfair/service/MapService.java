@@ -10,6 +10,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import wellfair.common.BadRequestException;
 import wellfair.dao.BuildingDAO;
 import wellfair.to.AnalysisCriteriaTO;
 import wellfair.to.BuildingDetailTO;
@@ -127,6 +128,23 @@ public class MapService {
 		int rank = c.getOffset();
 		for (BuildingTO b : list) b.setRank(++rank);
 		return new PageTO<>(c.getPage(), c.getSize(), total, list);
+	}
+
+	/** 가중치 4묶음은 각각 0~100, 합 100 이어야 계산한다 (15단계 B-6). 화면은 늘 100 을 맞추므로 주소를 직접 고친 경우 대비. 아니면 400 */
+	public static final String MSG_WEIGHT = "가중치 합계가 100이 되어야 분석을 실행할 수 있어요";
+	public static void assertWeights(AnalysisCriteriaTO c) {
+		int[] w = { c.getSpaceW(), c.getBldW(), c.getFloodW(), c.getEconW() };
+		int sum = 0;
+		for (int v : w) {
+			if (v < 0 || v > 100) throw new BadRequestException(MSG_WEIGHT);
+			sum += v;
+		}
+		if (sum != 100) throw new BadRequestException(MSG_WEIGHT);
+	}
+
+	// 건물의 구 코드 (없는 건물이면 null). 구청 계정 관할 확인용 (15단계 A)
+	public String getBuildingSgg(String bldId) {
+		return bldId == null || bldId.isBlank() ? null : dao.getBuildingSgg(bldId);
 	}
 
 	// 건물 상세 : 건물 + 점수 구성 + 거주자 집계

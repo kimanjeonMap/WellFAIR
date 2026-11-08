@@ -27,6 +27,13 @@ public class MemberService {
 		return member;
 	}
 
+	// user_id 로 1명 (비밀번호 비움, 없으면 null). 05 인수인계 받는 담당자 확인용
+	public MemberTO getMember(long userId) {
+		MemberTO m = dao.getMember(userId);
+		if (m != null) m.setPasswordHash(null);
+		return m;
+	}
+
 	// 05 인수인계 받는 담당자 후보 (같은 구, 비밀번호 비움)
 	public List<MemberTO> getUserList(String sggCd) {
 		List<MemberTO> list = dao.getUserList(sggCd);

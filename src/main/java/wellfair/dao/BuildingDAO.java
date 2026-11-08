@@ -65,4 +65,9 @@ public class BuildingDAO {
 	public BuildingTO getBuilding(AnalysisCriteriaTO c) {
 		return session.selectOne("mapper-building.getBuilding", c);
 	}
+
+	// 건물의 구 (없으면 null)
+	public String getBuildingSgg(String bldId) {
+		return session.selectOne("mapper-building.getBuildingSgg", bldId);
+	}
 }

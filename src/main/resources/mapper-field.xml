@@ -49,6 +49,15 @@
 		 WHERE f.factor_id IN <foreach collection="list" item="id" open="(" separator="," close=")">#{id}</foreach>
 	</select>
 
+	<!-- 담으려는 factorId 중 내 보관함 것의 수 (15단계 D-10 : 남의 factorId 가 섞이면 저장 전체 취소) -->
+	<select id="countMyFactors" resultType="int">
+		SELECT COUNT(DISTINCT f.factor_id)
+		  FROM vulnerability_factor f
+		  JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
+		 WHERE l.user_id = #{userId} AND l.is_active = 1
+		   AND f.factor_id IN <foreach collection="factorIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+	</select>
+
 	<insert id="addField" parameterType="wellfair.to.FieldListTO" useGeneratedKeys="true" keyProperty="surveyId">
 		INSERT INTO survey_list (user_id, sgg_cd, title, move_mode) VALUES (#{userId}, #{sggCd}, #{title}, IFNULL(#{moveMode}, 'WALK'))
 	</insert>

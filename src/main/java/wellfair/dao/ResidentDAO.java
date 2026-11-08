@@ -27,4 +27,8 @@ public class ResidentDAO {
 	public ResidentTO getResident(long residentId) {
 		return session.selectOne("mapper-resident.getResident", residentId);
 	}
+
+	public String getResidentBldId(long residentId) {
+		return session.selectOne("mapper-resident.getResidentBldId", residentId);
+	}
 }

@@ -36,6 +36,13 @@ public class FieldDAO {
 		return session.selectList("mapper-field.getFactorSggList", factorIds);
 	}
 
+	// factorIds 중 내 보관함(user_id) 것의 수 (서로 다른 id 기준)
+	public int countMyFactors(long userId, List<Long> factorIds) {
+		Map<String, Object> p = new HashMap<>();
+		p.put("userId", userId); p.put("factorIds", factorIds);
+		return session.selectOne("mapper-field.countMyFactors", p);
+	}
+
 	public int addField(FieldListTO to) {
 		return session.insert("mapper-field.addField", to);
 	}

@@ -132,6 +132,7 @@
 .wp-row > b { height: 22px; line-height: 20px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; font-weight: 700; min-width: 48px; text-align: center; }
 .wp-row input { grid-column: 1 / -1; width: 100%; }
 .wp-row.locked .wp-name, .wp-row.locked > b { color: var(--text-3); }
+.wp-note { margin: 10px 0 0; font-size: 11px; line-height: 1.55; color: var(--text-3); }   /* 점수 규칙 안내 (15단계 B-7) */
 
 /* 패널 접기 손잡이 */
 .side-toggle {
@@ -363,6 +364,7 @@
 .rs-hh { margin-left: 8px; padding: 0 6px; border-radius: var(--radius); background: var(--bg-card); color: var(--text-2); font-size: 10.5px; }
 .rs-score { width: 58px; text-align: right; }
 .rs-score b { font-size: 15px; font-weight: 700; }
+.rs-score .rs-under { display: block; font-size: 10px; line-height: 1; margin-top: 2px; color: var(--text-3); font-style: normal; }   /* 검색 결과의 기준 미만 (15단계 C-9) */
 .rs-score .rs-track { display: block; height: 3px; margin-top: 6px; background: var(--line-soft); }
 .rs-score .rs-track i { display: block; height: 100%; background: var(--primary); }
 .rs-more { margin: 0 12px 12px; height: 36px; border: 1px solid var(--line); border-radius: var(--radius); background: none; color: var(--text-2); cursor: pointer; }
@@ -438,6 +440,10 @@
 .rm-tbl th { background: var(--bg-card); color: var(--text-2); font-weight: 500; text-align: left; padding: 11px 14px; font-size: 12.5px; }
 .rm-tbl td { padding: 15px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 .rm-tbl .rm-flr { font-weight: 700; font-size: 15px; }
+/* 순위 + 가점 (12단계) : "1  42점", 가점에 올리면 내역 툴팁 */
+.rm-tbl .rm-rank { white-space: nowrap; width: 64px; }
+.rm-tbl .rm-rank b { font-size: 14px; font-weight: 700; margin-right: 6px; }
+.rm-tbl .rm-rank small { font-size: 11px; color: var(--text-2); border-bottom: 1px dotted var(--text-3); cursor: help; }
 .rm-tbl .tag { margin-right: 4px; }
 .tag.benefit { border-style: dashed; color: var(--text-3); background: transparent; }
 .rm-legend { margin: -4px 0 10px; font-size: 11px; }

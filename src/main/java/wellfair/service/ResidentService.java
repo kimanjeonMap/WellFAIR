@@ -1,5 +1,6 @@
 package wellfair.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,11 @@ public class ResidentService {
 		return list;
 	}
 
+	// 가구가 사는 건물 id (없으면 null). 구청 계정의 관할 확인용 (15단계 A-1)
+	public String getResidentBldId(long residentId) {
+		return dao.getResidentBldId(residentId);
+	}
+
 	// "정보 확인하기" : 동·호수만 (호수 없으면 안내 문구)
 	public ResidentTO getResidentLocation(long residentId) {
 		ResidentTO r = dao.getResident(residentId);
@@ -63,7 +69,27 @@ public class ResidentService {
 		return birth.substring(0, 2) + "****";
 	}
 
+	/**
+	 * 태그 + 가점 내역. 내역(priorityText)은 mapper-resident priorityExpr 와 같은 규칙 · 같은 숫자여야 한다 (12단계 툴팁) :
+	 * 고위험고립 30 · 사회적고립 15 · 75세 이상 15 · 심한 장애 15 · 사각지대 15 · 건보료 체납 10 · 독박돌봄 10 · 지하·옥탑층 10 · 기초생활/차상위 5 · 기초연금 3
+	 */
 	private static void fillTags(ResidentTO r) {
+		List<String> pt = new ArrayList<>();
+		if ("고위험고립".equals(r.getRiskGrade())) pt.add("고위험고립 30");
+		else if ("사회적고립".equals(r.getRiskGrade())) pt.add("사회적고립 15");
+		if (r.getOld75Cnt() > 0) pt.add("75세 이상 15");
+		if (r.getSevereCnt() > 0) pt.add("심한 장애 15");
+		if ("Y".equals(r.getBlindSpotYn())) pt.add("사각지대 15");
+		if ("Y".equals(r.getArrearsYn())) pt.add("건보료 체납 10");
+		if ("Y".equals(r.getCareBurdenYn())) pt.add("독박돌봄 10");
+		String fl = r.getResFlr() == null ? "" : r.getResFlr();
+		if (fl.startsWith("지하")) pt.add("지하층 10");
+		else if (fl.equals("옥탑층")) pt.add("옥탑층 10");
+		if ("Y".equals(r.getBasicLivingYn())) pt.add("기초생활 5");
+		else if ("Y".equals(r.getNearPoorYn())) pt.add("차상위 5");
+		if (r.getPensionCnt() > 0) pt.add("기초연금 3");
+		r.setPriorityText(pt.isEmpty() ? "가점 요인 없음" : String.join(" · ", pt));
+
 		List<String> t = r.getTags();
 		if ("고위험고립".equals(r.getRiskGrade()) || "사회적고립".equals(r.getRiskGrade())) t.add(r.getRiskGrade());
 		if (r.getOld75Cnt() > 0) t.add("75세 이상");
