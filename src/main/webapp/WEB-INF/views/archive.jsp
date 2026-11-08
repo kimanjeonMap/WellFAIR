@@ -162,6 +162,10 @@
                 <button type="button" class="to-survey" data-id="${s.surveyId}" data-factor="${r.factorId}"><c:out value="${s.title}"/>에 저장<small><c:out value="${s.firstAddr}"/> · ${s.itemCnt}건</small></button>
               </c:forEach>
               <button type="button" class="to-survey new" data-id="0" data-factor="${r.factorId}">+ 새 현장확인 리스트 만들어 저장</button>
+              <c:choose>
+                <c:when test="${r.status == 'TODO'}"><button type="button" class="row-del" data-factor="${r.factorId}">보관함에서 빼기</button></c:when>
+                <c:otherwise><button type="button" class="row-del" disabled title="현장확인 리스트에 담긴 건물은 리스트에서 먼저 빼야 보관함에서 뺄 수 있습니다">보관함에서 빼기 (리스트에 담김)</button></c:otherwise>
+              </c:choose>
             </div>
           </div>
         </td>

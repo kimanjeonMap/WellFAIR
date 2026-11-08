@@ -98,6 +98,17 @@
 		</if>
 	</delete>
 
+	<!-- 리스트 삭제 : 담긴 건물(survey_plan)은 FK CASCADE 로 같이 지워진다.
+	     현장 확인 기록이 하나라도 있으면 05 건물 확인 이력이 깨지므로 지우지 않는다 (0 리턴) -->
+	<select id="countFieldRecords" resultType="int">
+		SELECT COUNT(*) FROM survey_plan p JOIN survey_record r ON r.plan_id = p.plan_id WHERE p.survey_id = #{surveyId}
+	</select>
+	<delete id="deleteField">
+		DELETE FROM survey_list
+		 WHERE survey_id = #{surveyId} AND user_id = #{userId}
+		   AND NOT EXISTS (SELECT 1 FROM survey_plan p JOIN survey_record r ON r.plan_id = p.plan_id WHERE p.survey_id = #{surveyId})
+	</delete>
+
 	<!-- 항목 넣기 (이미 있으면 순서만) -->
 	<insert id="addItem">
 		INSERT INTO survey_plan (survey_id, factor_id, visit_order)

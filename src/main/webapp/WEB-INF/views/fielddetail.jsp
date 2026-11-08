@@ -32,10 +32,11 @@
       <div class="card-head"><h3>경로 · 소요시간</h3><small><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳 · 직선거리 × 1.3</small></div>
       <%-- 이동수단 : 저장된 move_mode 에 on. 세 칸 다 눌러서 바꿀 수 있고 바꾸면 api/field/mode.do 로 저장 + 아래 시간 다시 계산 (5-1) --%>
       <c:set var="mm" value="${empty field.moveMode ? 'WALK' : field.moveMode}"/>
+      <%@ include file="/WEB-INF/views/include/mode-icons.jspf" %>
       <div class="route-modes" id="routeModes">
-        <div data-mode="walk" class="${mm == 'WALK' ? 'on' : ''}" title="도보 4km/h">도보<b>${walkMin}<small>분</small></b></div>
-        <div data-mode="transit" class="${mm == 'TRANSIT' ? 'on' : ''}" title="대중교통 15km/h">대중교통<b>${transitMin}<small>분</small></b></div>
-        <div data-mode="car" class="${mm == 'CAR' ? 'on' : ''}" title="자동차 20km/h">자동차<b>${carMin}<small>분</small></b></div>
+        <div data-mode="walk" class="${mm == 'WALK' ? 'on' : ''}" title="도보 4km/h">${icoWalk}도보<b>${walkMin}<small>분</small></b></div>
+        <div data-mode="transit" class="${mm == 'TRANSIT' ? 'on' : ''}" title="대중교통 15km/h">${icoTransit}대중교통<b>${transitMin}<small>분</small></b></div>
+        <div data-mode="car" class="${mm == 'CAR' ? 'on' : ''}" title="자동차 20km/h">${icoCar}자동차<b>${carMin}<small>분</small></b></div>
       </div>
       <div class="route-stats">
         <div>이동 거리<b>${km}km</b></div>

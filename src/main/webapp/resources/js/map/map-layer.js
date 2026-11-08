@@ -163,7 +163,7 @@ window.MapLayer = (function () {
     $('#toggleLeft').on('click', function () {
       var closed = $('.map-layout').toggleClass('left-closed').hasClass('left-closed');
       $(this).attr('aria-expanded', String(!closed));
-      if (onToggle) setTimeout(onToggle, 280);
+      /* 레이어 패널은 지도 위에 떠 있어서 지도 크기가 그대로 → resize 를 부르지 않는다 (부르면 지도가 움찔) */
     });
   }
 

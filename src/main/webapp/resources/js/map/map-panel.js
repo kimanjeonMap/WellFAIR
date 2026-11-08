@@ -131,7 +131,7 @@ window.MapPanel = (function () {
 
     $('#btnWhy').on('click', function () { Common.toast('기준 가이드(LLM)는 연동 예정입니다.'); });
     $('#detailBack').on('click', function () { $('#detailView').hide(); $('#resultView').show(); });
-    $('#detailClose, #resultClose').on('click', function () { $('#panelRight').removeClass('open'); if (opts.onClose) setTimeout(opts.onClose, 280); });
+    $('#detailClose, #resultClose').on('click', function () { $('#panelRight').removeClass('open'); });   /* 오른쪽 패널도 지도 위에 덮으므로 resize 없음 */
   }
 
   return { init: init, show: show };

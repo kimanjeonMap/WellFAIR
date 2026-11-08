@@ -97,6 +97,15 @@ public class FieldService {
 		return surveyId;
 	}
 
+	/**
+	 * 리스트 삭제. 1 = 지움 / 0 = 내 리스트가 아님 / -1 = 현장 확인 기록이 있어서 남김 (05 이력 보호)
+	 */
+	public int deleteField(long userId, String userGu, long surveyId) {
+		if (dao.getField(surveyId, userId, userGu) == null) return 0;
+		if (dao.countFieldRecords(surveyId) > 0) return -1;
+		return dao.deleteField(surveyId, userId) > 0 ? 1 : 0;
+	}
+
 	// 보관함에서 "현장확인 리스트에 저장" : 기존 항목 뒤에 붙인다 (surveyId 0 = 새 리스트). 다른 구 건물이면 IllegalArgumentException
 	public long addItems(long userId, String userGu, long surveyId, List<Long> factorIds) {
 		FieldListTO old = surveyId > 0 ? dao.getField(surveyId, userId, userGu) : null;

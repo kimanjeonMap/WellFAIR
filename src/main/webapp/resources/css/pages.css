@@ -60,6 +60,7 @@
 .tbl tbody tr.sel { background: var(--bg-card); border-left-color: var(--primary); }
 .tbl .name { font-size: 13px; font-weight: 600; }
 .tbl .badge { padding: 2px 12px; }
+.tbl td.muted { white-space: nowrap; }
 .tbl .row-dd .btn-sm { height: 26px; padding: 0 9px; font-size: 12px; }
 .tbl .addr { font-size: 12px; color: var(--text-2); margin-top: 2px; }
 .tbl input[type=checkbox] { accent-color: var(--primary); width: 15px; height: 15px; }
@@ -86,6 +87,9 @@
 .dd-menu button small { display: block; font-size: 11px; color: var(--text-2); margin-top: 2px; }
 .dd-menu button:hover { background: var(--bg-hover); }
 .dd-menu button.new { color: var(--primary); font-weight: 600; border-bottom: 0; }
+.dd-menu button.row-del { border-top: 1px solid var(--line-soft); border-bottom: 0; color: var(--text-2); font-size: 12px; }
+.dd-menu button.row-del:hover:not(:disabled) { color: var(--danger); }
+.dd-menu button.row-del:disabled { color: var(--text-3); cursor: not-allowed; background: none; }
 
 /* 선택 바 · 페이지 */
 .sel-bar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin: 0 0 6px; min-height: 28px; font-size: 13px; color: var(--primary); }
@@ -104,7 +108,14 @@
 /* 현장확인 리스트 (03) */
 .fl-head { display: grid; grid-template-columns: 1fr 104px 230px 180px; padding: 8px 20px; font-size: 12px; color: var(--text-2); }
 .fl-card { background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 11px; }
+.fl-card { transition: border-color .12s, background-color .12s; }
+.fl-row { cursor: pointer; }
+.fl-card:not(.open):hover { background: var(--bg-hover); border-color: #4a4a52; }
 .fl-card.open { border-color: var(--primary); background: #17191c; }
+.fl-body-foot { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.fl-del { background: none; border: 0; padding: 4px 2px; font-size: 12px; color: var(--text-2); cursor: pointer; }
+.fl-del:hover:not(:disabled) { color: var(--danger); text-decoration: underline; }
+.fl-del:disabled { color: var(--text-3); cursor: not-allowed; }
 .fl-actions .btn-sm { height: 30px; padding: 0 13px; }
 .fl-row { display: grid; grid-template-columns: 1fr 104px 230px 180px; align-items: center; padding: 13px 20px 16px; }
 .fl-row .t { font-size: 16px; font-weight: 700; }
@@ -316,3 +327,18 @@
 .fe-grid .fe-foot { margin: 6px 12px 0; padding: 13px 4px 11px; border-top: 1px solid var(--line-soft); }
 .fe-grid .fe-foot .seg button { height: 26px; padding: 0 12px; font-size: 12px; }
 .fe-grid .fe-foot .btn-primary { height: 36px; width: 120px; padding: 0; font-size: 13px; }
+
+/* 이동수단 아이콘 (03-1 지도 소요시간 · 03-2 경로 카드) */
+.mi { width: 20px; height: 20px; fill: currentColor; flex: 0 0 auto; }
+.rt-box { gap: 18px; padding: 10px 16px; }
+.rt-box .rt { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+.rt-box .rt .mi { width: 22px; height: 22px; }
+.rt-box .rt span { color: var(--text-2); font-size: 12px; }
+.rt-box .rt small { display: block; font-size: 11px; line-height: 14px; color: var(--text-2); }
+.rt-box .rt b { font-size: 20px; line-height: 24px; color: var(--text); margin-right: 1px; }
+.rt-box .rt.on, .rt-box .rt.on .mi { color: var(--primary); }
+.rt-box .rt.on small { color: var(--primary); }
+.route-modes div { display: grid; grid-template-columns: auto 1fr; column-gap: 6px; align-content: start; align-items: center; }
+.route-modes div .mi { width: 16px; height: 16px; color: var(--text-2); }
+.route-modes div.on .mi { color: var(--primary); }
+.route-modes b { grid-column: 1 / -1; }

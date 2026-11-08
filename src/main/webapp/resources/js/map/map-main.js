@@ -254,7 +254,6 @@ $(function () {
     $('#panelRight').addClass('open');
     $('#detailView').hide(); $('#resultView').show();
     $('#btnRefetch').removeClass('show');
-    resize();
     loadGus();
     loadPoints();
     legendKey = null; renderLegend(modeOf(zoomNow()));

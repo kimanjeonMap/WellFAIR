@@ -64,6 +64,16 @@ public class FieldDAO {
 		return session.delete("mapper-field.deleteItemsNotIn", p);
 	}
 
+	public int countFieldRecords(long surveyId) {
+		return session.selectOne("mapper-field.countFieldRecords", surveyId);
+	}
+
+	public int deleteField(long surveyId, long userId) {
+		Map<String, Object> p = new HashMap<>();
+		p.put("surveyId", surveyId); p.put("userId", userId);
+		return session.delete("mapper-field.deleteField", p);
+	}
+
 	public int addItem(long surveyId, long factorId, int visitOrder) {
 		Map<String, Object> p = new HashMap<>();
 		p.put("surveyId", surveyId); p.put("factorId", factorId); p.put("visitOrder", visitOrder);

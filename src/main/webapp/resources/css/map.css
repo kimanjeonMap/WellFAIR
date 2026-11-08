@@ -180,7 +180,7 @@
   font-size: 12px; color: var(--text-2);
 }
 .chip b { color: var(--text); }
-.chip-toggle { cursor: pointer; margin-left: 6px; }
+.chip-toggle { cursor: pointer; margin-left: 6px; white-space: nowrap; flex-shrink: 0; }
 .chip-toggle .ck { width: 14px; height: 14px; border-radius: var(--radius); border: 1px solid var(--line); display: grid; place-items: center; font-size: 10px; color: transparent; }
 .chip-toggle.on { border-color: var(--primary); color: var(--text); }
 .chip-toggle.on .ck { background: var(--primary); border-color: var(--primary); color: #fff; }
@@ -314,15 +314,26 @@
 }
 
 /* ---------- 오른쪽 패널 ---------- */
+/* 지도 위에 덮는다 : 지도 크기가 안 바뀌어야 여닫을 때 지도가 움찔하지 않는다 (2026-11-08) */
 .right-panel {
-  width: 400px; flex: 0 0 400px;
-  margin-right: -400px;
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 20;
+  width: 400px;
   display: flex; flex-direction: column;
   background: var(--bg-panel);
   border-left: 1px solid var(--line);
-  transition: margin-right .26s ease;
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform .26s ease, visibility 0s linear .26s;
 }
-.right-panel.open { margin-right: 0; }
+.right-panel.open { transform: none; visibility: visible; transition: transform .26s ease, visibility 0s; }
+/* 패널이 열리면 지도 위 오른쪽 요소들을 패널 왼쪽으로 비켜 준다 */
+.map-top, .map-ctrl { transition: left .26s ease, right .26s ease; }
+.out-bar, .btn-refetch { transition: left .26s ease; }
+.map-layout:has(.right-panel.open) .map-top,
+.map-layout:has(.right-panel.open) .map-ctrl { right: 412px; }
+.map-layout:has(.right-panel.open) .out-bar,
+.map-layout:has(.right-panel.open) .btn-refetch { left: calc(50% - 200px); }
+.map-layout:has(.right-panel.open) .map-legend { max-width: calc(100% - var(--lp-right) - 72px - 400px); }
 .rp-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .rp-head { display: flex; align-items: center; gap: 8px; height: 52px; flex: 0 0 52px; padding: 0 22px 0 24px; border-bottom: 1px solid #323338; }
 .rp-head h2 { font-size: 15px; font-weight: 700; flex: 1; }

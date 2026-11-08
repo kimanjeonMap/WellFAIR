@@ -12,7 +12,10 @@
 <%@ include file="/WEB-INF/views/include/header.jspf" %>
 
 <div class="page">
-  <div class="page-head"><h1>현장확인 리스트 ${field.surveyId > 0 ? '수정' : '만들기'}</h1></div>
+  <div class="page-head" style="margin-bottom:23px">
+    <h1>현장확인 리스트 ${field.surveyId > 0 ? '수정' : '만들기'}</h1>
+    <div class="right"><a class="btn btn-line" id="btnBackList" href="${ctx}/fieldlist.do">‹ 목록으로</a></div>
+  </div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
 
   <form method="post" action="${ctx}/fieldedit.do" id="editForm">
@@ -73,11 +76,11 @@
     <div class="nmap" id="map"></div>
     <div class="map-float tl"><label class="chk"><input type="checkbox" id="onlyMine"> 리스트 건물만 보기 (<span id="mineCnt">0</span>)</label></div>
     <div class="map-float bl"><span><i class="lg-dot fill"></i>리스트에 담긴 건물</span><span><i class="lg-dot"></i>담을 수 있는 보관함 건물</span></div>
-    <div class="map-float br">
-      <div><small>이동 시간 (직선거리 × 1.3)</small><span id="routeCap" class="muted" style="font-size:12px">0곳</span></div>
-      <div><small>도보</small><b id="tWalk">0</b>분</div>
-      <div><small>자동차</small><b id="tCar">0</b>분</div>
-      <div><small>대중교통</small><b id="tTransit">0</b>분</div>
+    <%@ include file="/WEB-INF/views/include/mode-icons.jspf" %>
+    <div class="map-float br rt-box" id="rtBox">
+      <div class="rt" data-mode="walk" title="도보 (4km/h)">${icoWalk}<span><small>도보</small><b id="tWalk">0</b>분</span></div>
+      <div class="rt" data-mode="transit" title="대중교통 (15km/h)">${icoTransit}<span><small>대중교통</small><b id="tTransit">0</b>분</span></div>
+      <div class="rt" data-mode="car" title="자동차 (20km/h)">${icoCar}<span><small>자동차</small><b id="tCar">0</b>분</span></div>
     </div>
   </div>
 </div>

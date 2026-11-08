@@ -64,6 +64,12 @@
           </div>
         </c:forEach>
         <c:if test="${empty f.items}"><div class="muted" style="padding:8px 10px">"수정"에서 보관함 건물을 담으세요.</div></c:if>
+        <div class="fl-body-foot">
+          <c:choose>
+            <c:when test="${f.doneCnt > 0}"><button type="button" class="fl-del" disabled title="현장 확인 기록이 있는 리스트는 건물 확인 이력을 지키기 위해 삭제할 수 없습니다">리스트 삭제</button></c:when>
+            <c:otherwise><button type="button" class="fl-del" data-id="${f.surveyId}" data-title="<c:out value='${f.title}'/>">리스트 삭제</button></c:otherwise>
+          </c:choose>
+        </div>
       </div>
     </div>
   </c:forEach>
@@ -72,11 +78,26 @@
   <a class="fl-new" href="${ctx}/fieldedit.do?listId=0" title="새 현장확인 리스트">+</a>
 </div>
 
+<form id="flDeleteForm" method="post" action="${ctx}/fielddelete.do" style="display:none"><input type="hidden" name="listId" id="flDeleteId"><input type="hidden" name="tab" value="${tab}"></form>
+
 <script src="${ctx}/resources/js/common.js"></script>
 <script>
   $(function () {
-    $('.fl-card .caret').on('click', function () { $(this).closest('.fl-card').toggleClass('open'); });
+    /* 카드 머리 어디를 눌러도 펼침. 하나를 펼치면 나머지는 접는다 (버튼·링크는 제외) */
+    $('.fl-row').on('click', function (e) {
+      if ($(e.target).closest('a, button:not(.caret)').length) return;
+      var $card = $(this).closest('.fl-card'), open = !$card.hasClass('open');
+      $('.fl-card').removeClass('open');
+      $card.toggleClass('open', open);
+    });
     $('.fl-card').first().addClass('open');
+
+    /* 리스트 삭제 */
+    $('.fl-del[data-id]').on('click', function () {
+      if (!confirm('"' + $(this).data('title') + '" 리스트를 삭제할까요?\n담긴 건물은 보관함에 그대로 남습니다.')) return;
+      $('#flDeleteId').val($(this).data('id'));
+      $('#flDeleteForm').trigger('submit');
+    });
   });
 </script>
 </body>
