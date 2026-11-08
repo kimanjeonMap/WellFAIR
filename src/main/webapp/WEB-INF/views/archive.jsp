@@ -189,7 +189,7 @@
 <form id="addItemsForm" method="post" action="${ctx}/fieldadditems.do" style="display:none"><input type="hidden" name="listId" id="addListId"><div id="addIds"></div></form>
 <form id="deleteForm" method="post" action="${ctx}/archivedelete.do" style="display:none"><div id="delIds"></div></form>
 
-<script src="${ctx}/resources/js/common.js?v=${assetV}"></script>
-<script src="${ctx}/resources/js/archive.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/common.js"></script>
+<script src="${ctx}/resources/js/archive.js"></script>
 </body>
 </html>

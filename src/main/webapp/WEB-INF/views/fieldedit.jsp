@@ -95,8 +95,8 @@
   };
 </script>
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=<c:out value='${naverClientId}'/>"></script>
-<script src="${ctx}/resources/js/common.js?v=${assetV}"></script>
-<script src="${ctx}/resources/js/field-map.js?v=${assetV}"></script>
-<script src="${ctx}/resources/js/field-edit.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/common.js"></script>
+<script src="${ctx}/resources/js/field-map.js"></script>
+<script src="${ctx}/resources/js/field-edit.js"></script>
 </body>
 </html>

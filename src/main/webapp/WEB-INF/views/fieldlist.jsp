@@ -80,7 +80,7 @@
 
 <form id="flDeleteForm" method="post" action="${ctx}/fielddelete.do" style="display:none"><input type="hidden" name="listId" id="flDeleteId"><input type="hidden" name="tab" value="${tab}"></form>
 
-<script src="${ctx}/resources/js/common.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/common.js"></script>
 <script>
   $(function () {
     /* 카드 머리 어디를 눌러도 펼침. 하나를 펼치면 나머지는 접는다 (버튼·링크는 제외) */

@@ -107,7 +107,7 @@
   };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="${ctx}/resources/js/common.js?v=${assetV}"></script>
-<script src="${ctx}/resources/js/dashboard.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/common.js"></script>
+<script src="${ctx}/resources/js/dashboard.js"></script>
 </body>
 </html>

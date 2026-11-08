@@ -1,23 +1,20 @@
 <%--
   공통 <head>. include 하기 전에 pageTitle 을 정한다 : <c:set var="pageTitle" value="로그인"/>
   화면별 css 가 있으면 pageCss 에 파일명만 : <c:set var="pageCss" value="login"/>
-  assetV : css/js 주소 뒤에 붙는 버전. 브라우저가 예전 css/js 를 캐시에서 꺼내 화면이 깨지는 걸 막는다.
-           css · js 를 고쳐서 올릴 때마다 숫자를 바꿔 주세요.
 --%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<c:set var="assetV" value="20261108-3" scope="request"/>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="ctx" content="${pageContext.request.contextPath}/">
   <title><c:out value="${pageTitle}"/> | WellFAIR</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-  <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/common.css?v=${assetV}">
+  <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/common.css">
   <c:if test="${not empty pageCss}">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/${pageCss}.css?v=${assetV}">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/${pageCss}.css">
   </c:if>
   <c:if test="${not empty pageCss2}">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/${pageCss2}.css?v=${assetV}">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/${pageCss2}.css">
   </c:if>
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>

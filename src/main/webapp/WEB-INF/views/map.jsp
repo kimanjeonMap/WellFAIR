@@ -194,13 +194,13 @@
   window.OPEN_BLD = '<c:out value="${openBldId}"/>';   // map.do?bldId= (05 지도에서 보기)
 </script>
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=<c:out value='${naverClientId}'/>"></script>
-<script src="${pageContext.request.contextPath}/resources/js/common.js?v=${assetV}"></script>
-<script src="${pageContext.request.contextPath}/resources/js/map/map-config.js?v=${assetV}"></script>
-<script src="${pageContext.request.contextPath}/resources/js/map/map-api.js?v=${assetV}"></script>
-<script src="${pageContext.request.contextPath}/resources/js/map/map-layer.js?v=${assetV}"></script>
-<script src="${pageContext.request.contextPath}/resources/js/map/map-marker.js?v=${assetV}"></script>
-<script src="${pageContext.request.contextPath}/resources/js/map/map-result.js?v=${assetV}"></script>
-<script src="${pageContext.request.contextPath}/resources/js/map/map-panel.js?v=${assetV}"></script>
-<script src="${pageContext.request.contextPath}/resources/js/map/map-main.js?v=${assetV}"></script>
+<script src="${pageContext.request.contextPath}/resources/js/common.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/map/map-config.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/map/map-api.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/map/map-layer.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/map/map-marker.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/map/map-result.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/map/map-panel.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/map/map-main.js"></script>
 </body>
 </html>

@@ -204,7 +204,7 @@
   <input type="hidden" name="listId" id="addListId"><input type="hidden" name="factorIds" value="${empty d.factor ? '' : d.factor.factorId}">
 </form>
 
-<script src="${ctx}/resources/js/common.js?v=${assetV}"></script>
-<script src="${ctx}/resources/js/archive-detail.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/common.js"></script>
+<script src="${ctx}/resources/js/archive-detail.js"></script>
 </body>
 </html>
