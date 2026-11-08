@@ -343,10 +343,6 @@ $(function () {
   /* reopenEmd : 구가 바뀌어 목록을 다시 받은 뒤에도 그 법정동의 행정동 열을 열어 둔다 (복수 선택 중) */
   function loadDongs(reopenEmd) {
     MapApi.dongs({ gu: state.gu }).done(function (list) {
-      /* 경계상 그 법정동과 안 겹치는 행정동(건물 좌표 오차로 붙은 것)은 메뉴에서 뺀다 */
-      if (window.DongBoundary && DongBoundary.validAdm) (list || []).forEach(function (d) {
-        d.adms = (d.adms || []).filter(function (a) { return DongBoundary.validAdm(d.sggCd, d.emdNm, a.admNm); });
-      });
       DONGS = list; renderDongMenu();
       if (reopenEmd) { var $r = $('#dmEmd .dm-row').filter(function () { return $(this).attr('data-emd') === reopenEmd; }); if ($r.length) showAdm($r); }
     });
