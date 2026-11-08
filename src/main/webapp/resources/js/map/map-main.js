@@ -60,7 +60,7 @@ $(function () {
   var fitTo = function (box) {
     if (!live() || !box) return;
     state.quietUntil = Date.now() + 2500;
-    map.fitBounds(new naver.maps.LatLngBounds(LL(box[1], box[0]), LL(box[3], box[2])), { top: 60, right: 40, bottom: 60, left: 40 });
+    map.fitBounds(new naver.maps.LatLngBounds(LL(box[1], box[0]), LL(box[3], box[2])), { top: 90, right: 60, bottom: 70, left: 60 });
   };
   var guOf = function (code) { return C.GU.filter(function (x) { return x.code === code; })[0]; };
   var criteria = function () { return state.criteria || (state.criteria = MapLayer.getCriteria()); };
@@ -82,6 +82,7 @@ $(function () {
     /* 법정동·행정동을 고르면 그 경계에 테두리 (행정동 여러 개면 전부). 구만 골랐거나 전체 구면 그리지 않는다 */
     if (window.DongBoundary && (state.dong || state.adms.length)) DongBoundary.show(map, state.gu, state.dong, state.adms.map(admOfKey));
     else if (window.DongBoundary) DongBoundary.show(null);
+    if (MapMarker.filterGu) MapMarker.filterGu(state.gu, !!(state.dong || state.adms.length));       // 동을 고르면 구 색칠은 숨김
   }
   /* 지도를 옮겨도 리스트는 그대로 (5-1). 분석 뒤 사용자가 옮겼을 때만 [이 지역에서 재검색] 을 띄운다 */
   function onMoved() {
@@ -107,6 +108,8 @@ $(function () {
     var b = map.getBounds(), sw = b.getSW(), ne = b.getNE();
     var pad = mode === 'cluster' ? 0.002 : 0.0005;        // 화면 바깥 조금 (건물 단위는 약 50m)
     var q = viewParams();
+    if (state.adms.length) { q.gu = state.gu; q.adms = state.adms; }   // 행정동을 고르면 그 행정동 건물만 (묶음 · 핀)
+    else if (state.dong) { q.gu = state.gu; q.dong = state.dong; }     // 법정동을 고르면 그 법정동 건물만
     q.bbox = [sw.lng() - pad, sw.lat() - pad, ne.lng() + pad, ne.lat() + pad].map(function (v) { return v.toFixed(5); }).join(',');
     var req;
     if (mode === 'cluster') {
@@ -149,8 +152,52 @@ $(function () {
   var moveTimer = null;
   function scheduleLoad() { clearTimeout(moveTimer); moveTimer = setTimeout(loadPoints, 200); }
 
+  /* 구 경계 = 실제 행정경계 (resources/geo/seoul_3gu_gu.geojson, 통계청 행정동 경계 2026-07 기준).
+     서버 ring 대신 이 고리를 쓴다. 파일을 못 읽으면 서버 ring 그대로 */
+  var realRings = null;
+  function loadRealRings() {
+    if (realRings) return realRings;
+    realRings = $.Deferred();
+    $.getJSON('resources/geo/seoul_3gu_gu.geojson').done(function (fc) {
+      var m = {};
+      (fc.features || []).forEach(function (f) {
+        var g = f.geometry, c = g.type === 'MultiPolygon' ? g.coordinates[0] : g.coordinates;
+        m[f.properties.gu_code] = c[0];                          // [[lng, lat], ...] 바깥 고리
+      });
+      realRings.resolve(m);
+    }).fail(function () { realRings.resolve({}); });
+    return realRings;
+  }
   function loadGus() {
-    MapApi.gus(viewParams()).done(function (list) { MapMarker.renderGu(list); setupLock(list); });
+    var params = viewParams();
+    loadRealRings().done(function (rings) {
+      MapApi.gus(params).done(function (list) {
+        (list || []).forEach(function (g) { if (rings[g.sggCd]) g.ring = rings[g.sggCd]; });
+        MapMarker.renderGu(list); setupLock(list);
+      });
+    });
+    loadAreaLabels();
+  }
+
+  /* 동 집계 원 : 법정동 · 행정동을 고르면 구 원 대신 "구로동 위험 N곳" / "구로1동 위험 N곳" (구 단위 줌에서만, 확대하면 도넛).
+     숫자는 gus.do 를 그 지역 조건(gu + dong 또는 gu + adms)으로 불러 받는다 = 구 원과 같은 기준 */
+  var areaSeq = 0;
+  function loadAreaLabels() {
+    var seq = ++areaSeq;
+    var targets = [];
+    if (state.adms.length) state.adms.forEach(function (k) { targets.push({ name: admOfKey(k), dong: '', adm: admOfKey(k), q: { gu: state.gu, adms: [k] } }); });
+    else if (state.dong) targets.push({ name: state.dong, dong: state.dong, adm: '', q: { gu: state.gu, dong: state.dong } });
+    if (!targets.length || !window.DongBoundary || !DongBoundary.center) { MapMarker.renderArea([]); return; }
+    var out = [], left = targets.length;
+    targets.forEach(function (t) {
+      var c = DongBoundary.center(state.gu, t.dong, t.adm ? [t.adm] : []);
+      MapApi.gus($.extend(viewParams(), t.q)).always(function (list) {
+        if (seq !== areaSeq) return;                                // 그새 다른 지역을 골랐으면 버림
+        var g = $.isArray(list) && list[0];
+        if (c) out.push({ name: t.name, lat: c[1], lng: c[0], riskCount: g ? g.riskCount : 0, checkedCnt: g ? g.checkedCnt : 0 });
+        if (--left === 0) MapMarker.renderArea(out);
+      });
+    });
   }
 
   /* ---------- 구청 계정 : 관할 밖 가림막 · 경계선 · 이동 범위 (11단계). 첫 gus 응답의 소속 구 ring 으로 한 번만 ---------- */
@@ -216,6 +263,7 @@ $(function () {
     $map.closest('.map-wrap').toggleClass('show-labels', z >= C.ZOOM.MAX);
     if (mode === 'gu') { state.pointSeq++; state.lastRaw = null; MapMarker.clear(); }
     MapMarker.showGu(mode === 'gu');
+    if (MapMarker.showArea) MapMarker.showArea(mode === 'gu');
     renderLegend(mode);
   }
   function renderLegend(mode) {
@@ -280,7 +328,8 @@ $(function () {
       if (m.kind === 'cluster') flyTo(m.data.lat, m.data.lng, Math.max(C.ZOOM.BUILDING, zoomNow() + 1));   // 묶음 → 확대
       else selectBuilding(m.data, false);
     },
-    onGuClick: function (g) { flyTo(g.lat, g.lng, C.ZOOM.CLUSTER_MIN); }
+    onGuClick: function (g) { flyTo(g.lat, g.lng, C.ZOOM.CLUSTER_MIN); },
+    onAreaClick: function (a) { flyTo(a.lat, a.lng, C.ZOOM.CLUSTER_MIN); }   // 동 집계 원을 누르면 확대 → 도넛
   });
   MapLayer.init({ onRun: runAnalysis, onToggle: resize });
   MapResult.init({ getParams: listParams, onSelect: function (b) { selectBuilding(b, true); } });
@@ -294,6 +343,10 @@ $(function () {
   /* reopenEmd : 구가 바뀌어 목록을 다시 받은 뒤에도 그 법정동의 행정동 열을 열어 둔다 (복수 선택 중) */
   function loadDongs(reopenEmd) {
     MapApi.dongs({ gu: state.gu }).done(function (list) {
+      /* 경계상 그 법정동과 안 겹치는 행정동(건물 좌표 오차로 붙은 것)은 메뉴에서 뺀다 */
+      if (window.DongBoundary && DongBoundary.validAdm) (list || []).forEach(function (d) {
+        d.adms = (d.adms || []).filter(function (a) { return DongBoundary.validAdm(d.sggCd, d.emdNm, a.admNm); });
+      });
       DONGS = list; renderDongMenu();
       if (reopenEmd) { var $r = $('#dmEmd .dm-row').filter(function () { return $(this).attr('data-emd') === reopenEmd; }); if ($r.length) showAdm($r); }
     });
@@ -360,10 +413,18 @@ $(function () {
     state.bbox = null;                                             // 동을 다시 고르면 재검색 범위는 풀린다
     $('#btnRefetch').removeClass('show');
     var box = areaBox();
-    if (box) fitTo(box);
+    var nAdm = state.adms.length;
+    /* 실제 경계 범위로 화면 맞춤 : 하나면 가운데로 정해진 줌 (map-config SEL_*), 행정동 여러 개면 전부 들어오게 */
+    var pbox = window.DongBoundary && DongBoundary.bbox ? DongBoundary.bbox(state.gu, state.dong, state.adms.map(admOfKey)) : null;
+    if (pbox && nAdm > 1) fitTo(pbox);
+    else if (pbox) flyTo((pbox[1] + pbox[3]) / 2, (pbox[0] + pbox[2]) / 2, nAdm ? C.ZOOM.SEL_ADM : state.dong ? C.ZOOM.SEL_BJD : C.ZOOM.SEL_GU);
+    else if (box) fitTo(box);
     else { var g = guOf(state.gu); flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.GU : C.ZOOM.INIT); }
     if (guChanged) loadDongs(reopenEmd); else $('#dongBtn span').text(dongLabel());
     renderScope();
+    loadAreaLabels();                                              // 동 집계 원 (구로동 위험 N곳)
+    onLevelChanged();                                              // 표시 방식 · 범례 다시
+    scheduleLoad();                                                // 행정동 조건이 바뀌었으니 묶음 · 핀 다시
     loadChecked();
     if (state.analyzed) MapResult.load(true);
   }
@@ -410,8 +471,13 @@ $(function () {
     $('#btnRefetch').removeClass('show');
     loadDongs();
     var g = guOf(state.gu);
-    flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.GU : C.ZOOM.INIT);
+    var pbox = window.DongBoundary && DongBoundary.bbox ? DongBoundary.bbox(state.gu, '', '') : null;   // 구 경계 범위로 화면 맞춤
+    if (pbox) flyTo((pbox[1] + pbox[3]) / 2, (pbox[0] + pbox[2]) / 2, C.ZOOM.SEL_GU);
+    else flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.GU : C.ZOOM.INIT);
     renderScope();
+    loadAreaLabels();
+    onLevelChanged();
+    scheduleLoad();
     loadChecked();
     if (state.analyzed) MapResult.load(true);
   });

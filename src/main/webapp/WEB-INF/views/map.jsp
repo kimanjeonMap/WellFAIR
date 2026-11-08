@@ -196,6 +196,7 @@
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=<c:out value='${naverClientId}'/>"></script>
 <script src="${pageContext.request.contextPath}/resources/js/common.js"></script>
 <script src="${pageContext.request.contextPath}/resources/js/map/map-config.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/map/gu-boundary.js"></script>
 <script src="${pageContext.request.contextPath}/resources/js/map/dong-boundary.js"></script>
 <script src="${pageContext.request.contextPath}/resources/js/map/map-api.js"></script>
 <script src="${pageContext.request.contextPath}/resources/js/map/map-layer.js"></script>
