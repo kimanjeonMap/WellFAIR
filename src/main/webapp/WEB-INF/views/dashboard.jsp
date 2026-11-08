@@ -12,7 +12,7 @@
 <%@ include file="/WEB-INF/views/include/header.jspf" %>
 
 <div class="page">
-  <form class="page-head" method="get" action="${ctx}/dashboard.do">
+  <form class="page-head dash-head" method="get" action="${ctx}/dashboard.do">
     <h1>대시보드</h1>
     <div class="right">
       <%-- 구청 계정은 소속 구로 잠금 (DashboardController 가 gu 를 강제). 서울시청은 구끼리 비교 --%>
@@ -62,7 +62,7 @@
     <%-- 월별 현장 확인 완료 (막대) --%>
     <div class="card">
       <div class="card-head"><h3>월별 현장 확인 완료</h3><small>최근 5개월 · 단위 건</small></div>
-      <p class="muted" style="font-size:12px;margin-bottom:10px">이번 달 ${d.monthDone}건 확인했어요. 지난달보다 ${d.monthDone - d.prevMonthDone}건 차이예요.</p>
+      <p style="font-size:12px;color:var(--text-2);margin-bottom:10px">이번 달 ${d.monthDone}건 확인했어요. 지난달보다 ${d.monthDone - d.prevMonthDone}건 차이예요.</p>
       <div class="chart-box"><canvas id="monthly"></canvas></div>
     </div>
   </div>

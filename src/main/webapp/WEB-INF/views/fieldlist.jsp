@@ -28,7 +28,7 @@
       <a class="btn btn-primary" href="${ctx}/fieldedit.do?listId=0">+ 새 현장확인 리스트</a>
     </div>
   </div>
-  <div style="border-bottom:1px solid var(--line);margin:0 0 12px"></div>
+  <div style="border-bottom:1px solid var(--line);margin:0 0 6px"></div>
 
   <div class="fl-head"><span>리스트 이름</span><span>건물</span><span>확인 진행</span><span></span></div>
 

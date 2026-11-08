@@ -138,8 +138,8 @@
   <table class="tbl" id="archiveTbl">
     <thead><tr>
       <th style="width:36px"><input type="checkbox" id="chkAll"></th>
-      <th>건물명 / 주소</th><th>취약 요인</th><th style="width:160px">취약도</th><th style="width:110px">우선순위(추정)</th>
-      <th style="width:90px">상태</th><th style="width:110px">저장일</th><th style="width:90px"></th>
+      <th>건물명 / 주소</th><th>취약 요인</th><th style="width:141px">취약도</th><th style="width:135px">우선순위(추정)</th>
+      <th style="width:127px">상태</th><th style="width:90px">저장일</th><th style="width:65px"></th>
     </tr></thead>
     <tbody>
     <%-- 행 클릭 → archivedetail.do?bldId= (05 건물 확인 이력) --%>

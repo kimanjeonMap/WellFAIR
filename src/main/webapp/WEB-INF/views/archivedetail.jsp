@@ -84,14 +84,13 @@
     <section>
       <div class="ad-sec-head">
         <h2>확인 이력 타임라인</h2>
+        <button type="button" class="btn btn-primary btn-sm ad-add" id="btnCheckForm">＋ 현장 확인 결과 입력</button>
         <div class="seg" id="tlFilter">
           <button type="button" data-f="all" class="on">전체</button>
           <button type="button" data-f="yes">요인 맞음</button>
           <button type="button" data-f="no">요인 아님</button>
         </div>
       </div>
-
-      <button type="button" class="btn btn-primary ad-add" id="btnCheckForm">＋ 현장 확인 결과 입력</button>
 
       <%-- 현장 체크 입력 폼 → POST archivecheck.do (visit_history + survey_record) --%>
       <form class="card ad-form" id="checkForm" method="post" action="${ctx}/archivecheck.do" style="display:none">
