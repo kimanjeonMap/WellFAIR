@@ -1,0 +1,84 @@
+/* 로그인 (Figma WellFAIR-01) : 왼쪽 브랜드 패널 / 오른쪽 폼 */
+
+.login-page {
+  display: grid;
+  grid-template-columns: 44% 56%;
+  min-height: 100vh;
+}
+
+/* 왼쪽 */
+.login-visual {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 160px 72px 64px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--line);
+}
+.login-logo { font-size: 40px; }
+.login-sub { margin-top: 22px; font-size: 18px; font-weight: 700; }
+.login-desc {
+  margin-top: 14px;
+  max-width: 420px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.login-points { margin-top: 44px; }
+.login-points li {
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 18px;
+  color: var(--text);
+}
+.login-points li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 5px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #4a4a4e;
+}
+.login-foot { font-size: 13px; color: var(--text-2); }
+
+/* 오른쪽 */
+.login-form-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: var(--bg);
+}
+.login-form { width: 100%; max-width: 400px; }
+.login-form h2 { font-size: 24px; font-weight: 700; }
+.login-form .desc { margin: 14px 0 26px; color: var(--text-2); }
+.login-form label { display: block; margin-bottom: 8px; }
+.login-form .field { margin-bottom: 20px; }
+
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: -4px 0 20px;
+  font-size: 13px;
+}
+.login-error {
+  margin: -8px 0 14px;
+  font-size: 13px;
+  color: var(--danger);
+}
+.login-form .btn-block { height: 46px; font-size: 15px; }
+
+.login-hint {
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: var(--bg-panel);
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--text-2);
+}
+
+@media (max-width: 900px) {
+  .login-page { grid-template-columns: 1fr; }
+  .login-visual { display: none; }
+}

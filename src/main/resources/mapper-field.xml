@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mapper-field">
+
+	<!-- ================================================================
+	     현장확인 = survey_list(리스트) + survey_plan(담긴 건물, factor_id → 어느 분석의 어느 건물·몇 점)
+	              + visit_history(방문) + survey_record(조사 기록 = 확인 완료)
+	     ================================================================ -->
+
+	<!-- 리스트 1개 + 건물 수 · 완료 수 · 첫 건물. 구(sgg_cd) = survey_list.sgg_cd (한 리스트 = 한 구), 없는 옛 리스트는 첫 건물의 구 -->
+	<sql id="listSelect">
+		SELECT s.survey_id, s.user_id, s.title, s.move_mode
+		     , DATE_FORMAT(s.created_at, '%Y-%m-%d') created_at
+		     , DATE_FORMAT(s.updated_at, '%Y-%m-%d') updated_at
+		     , (SELECT COUNT(*) FROM survey_plan p WHERE p.survey_id = s.survey_id) item_cnt
+		     , (SELECT COUNT(DISTINCT p.plan_id) FROM survey_plan p JOIN survey_record r ON r.plan_id = p.plan_id WHERE p.survey_id = s.survey_id) done_cnt
+		     , IFNULL(s.sgg_cd, (SELECT b.sgg_cd FROM survey_plan p JOIN vulnerability_factor f ON f.factor_id = p.factor_id JOIN building b ON b.bld_id = f.bld_id
+		         WHERE p.survey_id = s.survey_id ORDER BY p.visit_order, p.plan_id LIMIT 1)) sgg_cd
+		     , (SELECT b.emd_nm FROM survey_plan p JOIN vulnerability_factor f ON f.factor_id = p.factor_id JOIN building b ON b.bld_id = f.bld_id
+		         WHERE p.survey_id = s.survey_id ORDER BY p.visit_order, p.plan_id LIMIT 1) emd_nm
+		     , (SELECT CONCAT(b.addr, IFNULL(CONCAT(' ', b.bld_nm), IFNULL(CONCAT(' ', b.use_nm), ''))) FROM survey_plan p JOIN vulnerability_factor f ON f.factor_id = p.factor_id JOIN building b ON b.bld_id = f.bld_id
+		         WHERE p.survey_id = s.survey_id ORDER BY p.visit_order, p.plan_id LIMIT 1) first_addr
+		  FROM survey_list s
+	</sql>
+
+	<!-- 내 리스트 목록. tab = doing(진행중) | done(완료됨). gu 가 있으면 그 구 리스트만 (구청 계정) -->
+	<select id="getFieldList" resultType="wellfair.to.FieldListTO">
+		SELECT * FROM (<include refid="listSelect"/> WHERE s.user_id = #{userId}
+		  <if test="q != null and q != ''">AND s.title LIKE CONCAT('%', #{q}, '%')</if>) x
+		<where>
+			<if test="tab == 'done'">x.item_cnt > 0 AND x.done_cnt >= x.item_cnt</if>
+			<if test="tab == 'doing'">(x.item_cnt = 0 OR x.done_cnt &lt; x.item_cnt)</if>
+			<if test="gu != null and gu != ''">AND (x.sgg_cd = #{gu} OR x.sgg_cd IS NULL)</if>
+		</where>
+		ORDER BY x.updated_at DESC, x.survey_id DESC
+	</select>
+
+	<!-- 리스트 1개 (내 것만, 구청 계정은 소속 구 것만) -->
+	<select id="getField" resultType="wellfair.to.FieldListTO">
+		SELECT * FROM (<include refid="listSelect"/> WHERE s.survey_id = #{surveyId} AND s.user_id = #{userId}) x
+		<if test="gu != null and gu != ''">WHERE (x.sgg_cd = #{gu} OR x.sgg_cd IS NULL)</if>
+	</select>
+
+	<!-- 담으려는 건물들의 구 (한 리스트 = 한 구 검사용) -->
+	<select id="getFactorSggList" resultType="String">
+		SELECT DISTINCT b.sgg_cd
+		  FROM vulnerability_factor f
+		  JOIN building b ON b.bld_id = f.bld_id
+		 WHERE f.factor_id IN <foreach collection="list" item="id" open="(" separator="," close=")">#{id}</foreach>
+	</select>
+
+	<insert id="addField" parameterType="wellfair.to.FieldListTO" useGeneratedKeys="true" keyProperty="surveyId">
+		INSERT INTO survey_list (user_id, sgg_cd, title) VALUES (#{userId}, #{sggCd}, #{title})
+	</insert>
+
+	<!-- 제목 수정. 구가 아직 없던 옛 리스트는 이번에 정해진 구를 채운다 -->
+	<update id="updateField" parameterType="wellfair.to.FieldListTO">
+		UPDATE survey_list SET title = #{title}, sgg_cd = IFNULL(sgg_cd, #{sggCd}) WHERE survey_id = #{surveyId} AND user_id = #{userId}
+	</update>
+
+	<!-- 리스트 항목 (방문 순서대로) -->
+	<select id="getFieldItemList" resultType="wellfair.to.FieldItemTO">
+		SELECT p.plan_id, p.survey_id, p.factor_id, f.bld_id, p.visit_order, DATE_FORMAT(p.plan_date, '%Y-%m-%d') plan_date
+		     , b.addr, b.bld_nm, b.use_nm, b.emd_nm, b.sgg_cd, b.useapr_day, b.grnd_flr, b.ugrnd_flr, b.lat, b.lng
+		     , b.welf_nm, b.welf_dist, b.hosp_nm, b.hosp_dist
+		     , CAST(f.vulnerability_score AS SIGNED) score
+		     , CONCAT_WS(' · ', IF(b.ugrnd_res = 1, '지하층', NULL), IF(b.sp_type = '고시원', '고시원', NULL), IF(b.viol_yn = '1', '위반건축물', NULL)
+		                      , IF(b.flood_cnt >= 1, '침수', NULL), IF(b.elev_m &lt;= 15, '저지대', NULL)) factor_text
+		     , (SELECT DATE_FORMAT(MAX(r.created_at), '%Y-%m-%d %H:%i') FROM survey_record r WHERE r.plan_id = p.plan_id) checked_at
+		     , (SELECT v.result FROM survey_record r JOIN visit_history v ON v.visit_id = r.visit_id WHERE r.plan_id = p.plan_id ORDER BY r.record_id DESC LIMIT 1) check_result
+		     , (SELECT r.content FROM survey_record r WHERE r.plan_id = p.plan_id ORDER BY r.record_id DESC LIMIT 1) check_content
+		  FROM survey_plan p
+		  JOIN vulnerability_factor f ON f.factor_id = p.factor_id
+		  JOIN building b ON b.bld_id = f.bld_id
+		 WHERE p.survey_id = #{surveyId}
+		 ORDER BY p.visit_order IS NULL, p.visit_order, p.plan_id
+	</select>
+
+	<!-- 항목 순서 다시 매기기 : 유니크(survey_id, visit_order) 충돌을 피하려고 먼저 전부 비운다 -->
+	<update id="clearItemOrder">
+		UPDATE survey_plan SET visit_order = NULL WHERE survey_id = #{surveyId}
+	</update>
+
+	<!-- 새 목록에 없는 항목 삭제 (확인 기록이 있는 항목은 FK 때문에 남긴다) -->
+	<delete id="deleteItemsNotIn">
+		DELETE FROM survey_plan
+		 WHERE survey_id = #{surveyId}
+		   AND NOT EXISTS (SELECT 1 FROM survey_record r WHERE r.plan_id = survey_plan.plan_id)
+		<if test="factorIds != null and factorIds.size() > 0">
+		   AND factor_id NOT IN <foreach collection="factorIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+		</if>
+	</delete>
+
+	<!-- 항목 넣기 (이미 있으면 순서만) -->
+	<insert id="addItem">
+		INSERT INTO survey_plan (survey_id, factor_id, visit_order)
+		VALUES (#{surveyId}, #{factorId}, #{visitOrder})
+		ON DUPLICATE KEY UPDATE visit_order = VALUES(visit_order)
+	</insert>
+
+	<!-- 확인 완료 : 방문 1건 + 기록 1건 -->
+	<insert id="addVisit" parameterType="wellfair.to.FieldCheckTO" useGeneratedKeys="true" keyProperty="visitId">
+		INSERT INTO visit_history (user_id, bld_id, visited_at, result)
+		VALUES (#{userId}, #{bldId}, NOW(), #{result})
+	</insert>
+	<insert id="addRecord" parameterType="wellfair.to.FieldCheckTO">
+		INSERT INTO survey_record (plan_id, visit_id, content) VALUES (#{planId}, #{visitId}, #{content})
+	</insert>
+
+	<!-- 리스트 수정 화면 왼쪽 : 내 보관함 건물 전부 (+ 어느 리스트에 담겼는지). gu 가 있으면 그 구 건물만 -->
+	<select id="getPickList" resultType="wellfair.to.ArchiveRowTO">
+		SELECT f.factor_id, f.vulnerability_id, l.title, f.bld_id, b.sgg_cd, b.emd_nm, b.addr, b.bld_nm, b.use_nm, b.lat, b.lng
+		     , CAST(f.vulnerability_score AS SIGNED) score
+		     , CONCAT_WS(' · ', IF(b.ugrnd_res = 1, '지하층', NULL), IF(b.sp_type = '고시원', '고시원', NULL), IF(b.viol_yn = '1', '위반건축물', NULL)) factor_text
+		     , DATE_FORMAT(f.evaluated_at, '%Y-%m-%d') saved_at
+		     , <include refid="mapper-archive.statusExpr"/> status
+		     , (SELECT sp.survey_id FROM survey_plan sp WHERE sp.factor_id = f.factor_id ORDER BY sp.plan_id LIMIT 1) survey_id
+		     , (SELECT sl.title FROM survey_plan sp JOIN survey_list sl ON sl.survey_id = sp.survey_id WHERE sp.factor_id = f.factor_id ORDER BY sp.plan_id LIMIT 1) survey_title
+		  FROM vulnerability_factor f
+		  JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
+		  JOIN building b ON b.bld_id = f.bld_id
+		 WHERE l.user_id = #{userId} AND l.is_active = 1
+		 <if test="gu != null and gu != ''">AND b.sgg_cd = #{gu}</if>
+		 ORDER BY f.vulnerability_score DESC, f.factor_id
+	</select>
+
+</mapper>

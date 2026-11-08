@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <!-- mapper namespace 별 SQL 로그 (mapper-*.xml 의 namespace 와 같은 이름이어야 찍힘) -->
+    <logger name="mapper-member" level="trace" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="mapper-building" level="trace" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="mapper-resident" level="trace" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="mapper-archive" level="trace" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="mapper-field" level="trace" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="wellfair" level="debug" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    <logger name="org.springframework.web" level="info" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <root level="error">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

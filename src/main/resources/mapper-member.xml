@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mapper-member">
+
+	<!-- 로그인 사용자 = users 테이블. 로그인 ID 로 1명 -->
+	<select id="getMemberByLoginId" parameterType="String" resultType="wellfair.to.MemberTO">
+		SELECT user_id
+		     , login_id
+		     , password_hash
+		     , sgg_cd
+		     , user_nm
+		     , dept_nm
+		     , rank_nm
+		  FROM users
+		 WHERE login_id = #{loginId}
+	</select>
+
+</mapper>

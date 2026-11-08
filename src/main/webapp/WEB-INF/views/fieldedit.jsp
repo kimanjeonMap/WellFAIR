@@ -1,0 +1,96 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<c:set var="pageTitle" value="현장확인 리스트 수정"/>
+<c:set var="pageCss" value="pages"/>
+<c:set var="activeMenu" value="field"/>
+<c:set var="ctx" value="${pageContext.request.contextPath}"/>
+<!DOCTYPE html>
+<html lang="ko">
+<%@ include file="/WEB-INF/views/include/head.jspf" %>
+<body>
+<%@ include file="/WEB-INF/views/include/header.jspf" %>
+
+<div class="page">
+  <div class="page-head"><h1>현장확인 리스트 ${field.surveyId > 0 ? '수정' : '만들기'}</h1></div>
+  <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
+
+  <form method="post" action="${ctx}/fieldedit.do" id="editForm">
+    <input type="hidden" name="listId" value="${field.surveyId}">
+    <div id="orderIds"></div>
+
+    <div class="fe-grid">
+      <%-- 왼쪽 : 보관함 건물 --%>
+      <div class="card">
+        <div class="card-head"><h3>보관함 건물 <span id="pickCnt">${fn:length(pickList)}</span></h3><small>체크하면 이 리스트에 담깁니다</small></div>
+        <div class="pick-list" id="pickList">
+          <c:forEach var="p" items="${pickList}">
+            <label class="pick-row" data-factor="${p.factorId}">
+              <input type="checkbox" class="pick-chk" value="${p.factorId}">
+              <span><c:out value="${fn:substringAfter(fn:replace(p.addr, '서울특별시 ', ''), '구 ')}"/> <c:out value="${empty p.bldNm ? p.useNm : p.bldNm}"/></span>
+              <span class="tag"><c:out value="${empty p.factorText ? '요인 없음' : fn:split(p.factorText, '·')[0]}"/></span>
+              <span class="sc">${p.score}</span>
+              <span>
+                <c:choose>
+                  <c:when test="${p.surveyId == field.surveyId and field.surveyId > 0}"><span class="badge blue">이 리스트</span></c:when>
+                  <c:when test="${not empty p.surveyId}"><span class="badge" title="<c:out value='${p.surveyTitle}'/>">다른 리스트</span></c:when>
+                  <c:otherwise><span class="badge">없음</span></c:otherwise>
+                </c:choose>
+              </span>
+            </label>
+          </c:forEach>
+          <c:if test="${empty pickList}"><div class="empty">보관함이 비어 있습니다. 지도에서 먼저 저장하세요.</div></c:if>
+        </div>
+      </div>
+
+      <%-- 오른쪽 : 리스트 이름 · 순서 --%>
+      <div class="card">
+        <div class="fe-title"><span>✎</span><input class="field" name="title" id="title" value="<c:out value='${field.title}'/>" placeholder="리스트 이름 (예: 가리봉동 반지하 밀집)" required></div>
+        <div class="fe-tools">
+          <label>출발지 <select class="field sel-sm" id="startSel"><option value="11530">구로구청</option><option value="11470">양천구청</option><option value="11560">영등포구청</option></select></label>
+          <button type="button" class="btn btn-line btn-sm" id="btnOptimize" title="출발지에서 가까운 순으로 초안을 만들고 2-opt 로 교차 구간을 풀어 다시 매깁니다 (직선거리)">⇅ 최적 동선으로 정렬</button>
+          <span class="muted" style="font-size:12px">⋮⋮ 를 끌어서 순서를 바꿀 수 있어요</span>
+        </div>
+        <div class="fe-items" id="feItems"></div>
+        <div class="fe-foot">
+          <div class="seg" id="modeSeg">
+            <button type="button" data-mode="walk" class="on">도보</button>
+            <button type="button" data-mode="transit">대중교통</button>
+            <button type="button" data-mode="car">자동차</button>
+          </div>
+          <button type="submit" class="btn btn-primary">변경 내용 저장</button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <%-- 지도 : 담긴 건물 = 번호 핀 + 선, 나머지 보관함 건물 = 빈 원 (누르면 담기) --%>
+  <div class="fe-map">
+    <div class="nmap" id="map"></div>
+    <div class="map-float tl"><label class="chk"><input type="checkbox" id="onlyMine"> 리스트 건물만 보기 (<span id="mineCnt">0</span>)</label></div>
+    <div class="map-float bl"><span><i class="lg-dot fill"></i>리스트에 담긴 건물</span><span><i class="lg-dot"></i>담을 수 있는 보관함 건물</span></div>
+    <div class="map-float br">
+      <div><small>이동 시간 (직선거리 × 1.3)</small><span id="routeCap" class="muted" style="font-size:12px">0곳</span></div>
+      <div><small>도보</small><b id="tWalk">0</b>분</div>
+      <div><small>자동차</small><b id="tCar">0</b>분</div>
+      <div><small>대중교통</small><b id="tTransit">0</b>분</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.navermap_authFailure = function () { document.getElementById('map').innerHTML = '<div class="map-error"><b>네이버 지도 인증 실패</b></div>'; };
+  window.FE_DATA = {
+    surveyId: ${field.surveyId},
+    gu: '<c:out value="${field.sggCd}"/>',   /* 리스트의 구 (구청 계정 = 소속 구). 출발지 기본값 */
+    lockGu: '<c:out value="${sessionScope.loginMember.sggCd}"/>',
+    items: [<c:forEach var="it" items="${field.items}" varStatus="s">{ factorId: ${it.factorId}, bldId: '${it.bldId}', title: '<c:out value="${it.title}"/>', lat: ${it.lat}, lng: ${it.lng}, score: ${it.score}, checked: ${it.checked}, sggCd: '${it.sggCd}' }<c:if test="${!s.last}">,</c:if></c:forEach>],
+    pick: [<c:forEach var="p" items="${pickList}" varStatus="s">{ factorId: ${p.factorId}, bldId: '${p.bldId}', title: '<c:out value="${fn:substringAfter(fn:replace(p.addr, '서울특별시 ', ''), '구 ')}"/> <c:out value="${empty p.bldNm ? p.useNm : p.bldNm}"/>', lat: ${p.lat}, lng: ${p.lng}, score: ${p.score}, factor: '<c:out value="${p.factorText}"/>', surveyId: ${empty p.surveyId ? 'null' : p.surveyId}, sggCd: '${p.sggCd}' }<c:if test="${!s.last}">,</c:if></c:forEach>]
+  };
+</script>
+<script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=<c:out value='${naverClientId}'/>"></script>
+<script src="${ctx}/resources/js/common.js"></script>
+<script src="${ctx}/resources/js/field-map.js"></script>
+<script src="${ctx}/resources/js/field-edit.js"></script>
+</body>
+</html>

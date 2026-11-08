@@ -1,0 +1,26 @@
+<%--
+  공통 상단 메뉴 (기존 fragments/common.html 의 header(active)).
+  include 하기 전에 activeMenu 를 정한다 : map | works
+  loginUser, workCount 는 PageModelAdvice 가 모델에 넣어준다.
+--%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<header class="app-header">
+  <%-- 로고 : 살피구로 (글자마다 색) --%>
+  <a class="brand" href="<c:url value='/map'/>" aria-label="살피구로 - 주거환경 취약요인 공간분석, 지도 검색으로">
+    <span class="brand-logo" aria-hidden="true"><span class="b1">살</span><span class="b2">피</span><span class="b3">구</span><span class="b4">로</span></span>
+  </a>
+  <nav class="gnb" aria-label="주 메뉴">
+    <a href="<c:url value='/map'/>" class="${activeMenu == 'map' ? 'active' : ''}">지도 검색</a>
+    <a href="<c:url value='/works'/>" class="${activeMenu == 'works' ? 'active' : ''}">보관함<span class="gnb-count" id="gnb-count"><c:out value="${workCount}" default="0"/></span></a>
+  </nav>
+  <div class="header-right">
+    <c:if test="${not empty loginUser}">
+      <span class="user-org"><c:out value="${loginUser.orgLabel}"/></span>
+    </c:if>
+    <%-- CSRF 가 켜져 있어 로그아웃은 토큰을 실은 POST 로 보낸다 --%>
+    <form class="logout-form" action="<c:url value='/logout'/>" method="post">
+      <c:if test="${not empty _csrf}"><input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}"></c:if>
+      <button type="submit" class="btn btn-line btn-sm">로그아웃</button>
+    </form>
+  </div>
+</header>

@@ -1,0 +1,60 @@
+<%--
+  우측 건물 상세 패널 (Figma 02-2) + 취약 가구 정보 모달 (Figma 02-2-1)
+  내용은 map-panel.js 가 api/map/building.do · residents.do 로 채운다.
+  map.jsp 외에 보관함(archive.jsp) 에서도 include 할 수 있게 id 는 그대로 둔다.
+--%>
+<div class="rp-head">
+  <button type="button" class="rp-back" id="detailBack" title="결과 목록으로">‹</button>
+  <h2>건물 상세 정보</h2>
+  <button type="button" class="rp-close" id="detailClose">×</button>
+</div>
+
+<div class="d-title-wrap">
+  <h3 id="dTitle"></h3>
+  <div class="d-sub"><span id="dAddr"></span><span class="d-checked" id="dChecked" style="display:none"></span></div>
+  <div class="d-score">취약 점수 <b id="dScore"></b></div>
+</div>
+
+<div class="d-body">
+  <h4>점수 구성</h4>
+  <div class="sc-list" id="dScoreItems"></div>
+
+  <h4>건물 정보 (건축물대장)</h4>
+  <table class="d-info"><tbody id="dInfo"></tbody></table>
+
+  <%-- 거주 취약 가구 (02-2) : 집계만. 개인 정보는 모달에서 --%>
+  <h4>거주 취약 가구</h4>
+  <div class="vuln-box">
+    <div>
+      <b id="dVulnCnt">취약 가구 0세대</b>
+      <span id="dVulnTypes" class="muted"></span>
+    </div>
+    <button type="button" class="btn btn-line btn-sm" id="btnResidents">🔒 개인 정보 보기</button>
+  </div>
+
+  <h4>담당자 메모 <small class="d-hint">저장은 연동 예정</small></h4>
+  <textarea class="field d-memo" id="dMemo" rows="4" placeholder="예) 반지하 창문 2곳 확인 필요"></textarea>
+</div>
+
+<div class="d-foot">
+  <button type="button" class="btn btn-primary" id="btnArchive">보관함에 저장</button>
+  <button type="button" class="btn btn-line" id="btnWhy">이 기준은 왜?</button>
+</div>
+
+<%-- 취약 가구 정보 모달 (02-2-1) : 이름은 성만, 층수·연령대·가구 구성·취약 유형·복지 연계 --%>
+<div class="modal-bg" id="resModal" data-viewer="<c:out value='${sessionScope.loginMember.deptNm}'/> <c:out value='${sessionScope.loginMember.userNm}'/> <c:out value='${sessionScope.loginMember.rankNm}'/>">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h3>취약 가구 정보</h3><p class="muted" id="rmSub"></p></div>
+      <button type="button" class="rp-close" id="rmClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="rm-notice"><span>🔒 개인정보 열람 기록이 남아요 · <span id="rmViewer"></span></span><span class="muted">업무 목적 외 사용 금지</span></div>
+      <table class="rm-tbl">
+        <thead><tr><th>층수</th><th>세대주</th><th>연령대</th><th>가구 구성</th><th>취약 유형</th><th>복지 연계</th></tr></thead>
+        <tbody id="rmRows"></tbody>
+      </table>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn btn-line" id="rmClose2">닫기</button></div>
+  </div>
+</div>

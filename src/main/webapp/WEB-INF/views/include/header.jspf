@@ -1,0 +1,28 @@
+<%--
+  공통 상단 헤더 : 로고 · 탭 4개 · "부서 · 이름 직급" · 로그아웃
+  include 하기 전에 activeMenu 를 정한다 : map | field | archive | dashboard
+  loginMember 는 세션(LoginController 가 넣음)
+--%>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="ctx" value="${pageContext.request.contextPath}"/>
+<header class="app-header">
+  <a class="brand" href="${ctx}/map.do">
+    <span class="brand-logo"><span class="b1">Well</span><span class="b2">FAIR</span></span>
+    <span class="brand-sub">주거 취약공간 분석 플랫폼</span>
+  </a>
+  <nav class="gnb">
+    <a href="${ctx}/map.do"       class="${activeMenu == 'map' ? 'active' : ''}">취약공간 분석 지도</a>
+    <a href="${ctx}/fieldlist.do" class="${activeMenu == 'field' ? 'active' : ''}">현장 확인 리스트</a>
+    <a href="${ctx}/archive.do"   class="${activeMenu == 'archive' ? 'active' : ''}">보관함</a>
+    <a href="${ctx}/dashboard.do" class="${activeMenu == 'dashboard' ? 'active' : ''}">대시보드</a>
+  </nav>
+  <div class="header-right">
+    <c:if test="${not empty sessionScope.loginMember}">
+      <span class="user-info">
+        <c:out value="${sessionScope.loginMember.deptNm}"/> ·
+        <c:out value="${sessionScope.loginMember.userNm}"/> <c:out value="${sessionScope.loginMember.rankNm}"/>
+      </span>
+    </c:if>
+    <a href="${ctx}/logout.do" class="btn btn-line btn-sm">로그아웃</a>
+  </div>
+</header>

@@ -1,0 +1,531 @@
+<title>주사위 중간점검 파일 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* 레이아웃: 위에서 아래로 "한 줄 흐름 → 화면별 가지 → 전체 파일 표 → 규칙" 순서. 계층마다 색 하나를 끝까지 같은 의미로 쓴다. */
+:root{
+  color-scheme:dark;
+  --bg:#0E1622; --panel:#152131; --panel2:#1B2a3d; --line:#2A3B52; --fg:#E6EDF6; --muted:#8FA3BC;
+  --accent:#4C8DF6;
+  --c:#5B9BFF; --s:#B28CFF; --d:#F2B33D; --m:#FF8A5B; --t:#3CC6B4; --v:#5FD27A; --x:#8FA3BC;
+  --c-bg:rgba(91,155,255,.14); --s-bg:rgba(178,140,255,.14); --d-bg:rgba(242,179,61,.14); --m-bg:rgba(255,138,91,.14); --t-bg:rgba(60,198,180,.14); --v-bg:rgba(95,210,122,.14); --x-bg:rgba(143,163,188,.12);
+  --sans:"Noto Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,"D2Coding",monospace;
+}
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+  color-scheme:light; --bg:#F3F5F9; --panel:#FFFFFF; --panel2:#EEF2F8; --line:#D5DEEA; --fg:#14243A; --muted:#5B6E86; --accent:#1F5FBF;
+  --c:#1F5FBF; --s:#6B3FD1; --d:#A86A00; --m:#C24E1C; --t:#0E8577; --v:#1B8A4A; --x:#5B6E86;
+  --c-bg:rgba(31,95,191,.10); --s-bg:rgba(107,63,209,.10); --d-bg:rgba(168,106,0,.11); --m-bg:rgba(194,78,28,.10); --t-bg:rgba(14,133,119,.10); --v-bg:rgba(27,138,74,.10); --x-bg:rgba(91,110,134,.10);
+}}
+:root[data-theme="light"]{
+  color-scheme:light; --bg:#F3F5F9; --panel:#FFFFFF; --panel2:#EEF2F8; --line:#D5DEEA; --fg:#14243A; --muted:#5B6E86; --accent:#1F5FBF;
+  --c:#1F5FBF; --s:#6B3FD1; --d:#A86A00; --m:#C24E1C; --t:#0E8577; --v:#1B8A4A; --x:#5B6E86;
+  --c-bg:rgba(31,95,191,.10); --s-bg:rgba(107,63,209,.10); --d-bg:rgba(168,106,0,.11); --m-bg:rgba(194,78,28,.10); --t-bg:rgba(14,133,119,.10); --v-bg:rgba(27,138,74,.10); --x-bg:rgba(91,110,134,.10);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:48px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.3}
+h1{font-size:30px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:21px;font-weight:700}
+h3{font-size:16px;font-weight:700}
+p{margin:0}
+code,.mono{font-family:var(--mono);font-size:.86em}
+.muted{color:var(--muted)}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:500}
+header.top{display:flex;flex-direction:column;gap:10px}
+header.top p{max-width:70ch;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:18px}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+.sec-head p{max-width:75ch;color:var(--muted)}
+
+/* 계층 칩 */
+.L{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:6px;font-family:var(--mono);font-size:12.5px;white-space:nowrap;border:1px solid transparent}
+.L b{font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.04em;opacity:.9}
+.L.C{color:var(--c);background:var(--c-bg);border-color:color-mix(in srgb,var(--c) 30%,transparent)}
+.L.S{color:var(--s);background:var(--s-bg);border-color:color-mix(in srgb,var(--s) 30%,transparent)}
+.L.D{color:var(--d);background:var(--d-bg);border-color:color-mix(in srgb,var(--d) 30%,transparent)}
+.L.M{color:var(--m);background:var(--m-bg);border-color:color-mix(in srgb,var(--m) 30%,transparent)}
+.L.T{color:var(--t);background:var(--t-bg);border-color:color-mix(in srgb,var(--t) 30%,transparent)}
+.L.V{color:var(--v);background:var(--v-bg);border-color:color-mix(in srgb,var(--v) 30%,transparent)}
+.L.X{color:var(--x);background:var(--x-bg);border-color:color-mix(in srgb,var(--x) 30%,transparent)}
+
+/* 한 줄 흐름 */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.flow .step{flex:1 1 140px;min-width:0;display:flex;flex-direction:column;gap:6px;padding:4px 14px;position:relative}
+.flow .step + .step{border-left:1px dashed var(--line)}
+.flow .step .what{font-size:13px;color:var(--muted);line-height:1.5}
+.flow-note{font-size:13.5px;color:var(--muted)}
+
+/* 화면별 가지 */
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-size:14px;padding:7px 14px;border-radius:999px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.tab:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.screen{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px}
+.screen-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline}
+.screen-head p{color:var(--muted);font-size:14px;flex:1 1 320px;min-width:0}
+.tree-scroll{overflow-x:auto;padding-bottom:4px}
+.tree{list-style:none;margin:0;padding:0 0 0 22px;position:relative;min-width:max-content}
+.tree::before{content:"";position:absolute;left:6px;top:4px;bottom:18px;width:2px;background:var(--line);border-radius:2px}
+.branch{position:relative;padding:8px 0}
+.branch::before{content:"";position:absolute;left:-16px;top:22px;width:14px;height:2px;background:var(--line)}
+.req{display:inline-block;font-family:var(--mono);font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);margin-bottom:6px}
+.req .m{color:var(--accent);margin-right:6px}
+.req-why{font-size:13px;color:var(--muted);margin-left:8px}
+.chain{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.chain .arr{color:var(--muted);font-size:12px}
+
+/* 파일 표 */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{appearance:none;border:1px solid var(--line);background:transparent;color:var(--fg);font:inherit;font-size:13px;padding:5px 12px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--panel2);border-color:var(--accent);color:var(--accent);font-weight:700}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:880px;font-size:14px}
+th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:500;letter-spacing:.04em;background:var(--panel2);position:sticky;top:0}
+tr.dir td{background:var(--panel2);font-family:var(--mono);font-size:12.5px;color:var(--muted);padding-block:7px}
+tr.dir td b{color:var(--fg);font-weight:600}
+td.path{font-family:var(--mono);font-size:13px;white-space:nowrap}
+td.path .ind{color:var(--line)}
+td.role{min-width:0}
+.scr{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);margin:1px 3px 1px 0;white-space:nowrap}
+tr[hidden]{display:none}
+.count{font-size:13px;color:var(--muted)}
+
+/* 시나리오 */
+.scen{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;font-size:13.5px}
+.card ol li::marker{color:var(--muted);font-family:var(--mono);font-size:12px}
+.card ol code{color:var(--fg)}
+
+/* 규칙 */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.rule{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.rule p{font-size:14px;color:var(--muted)}
+.rule p code{color:var(--fg)}
+.rule .ex{font-family:var(--mono);font-size:12px;background:var(--panel2);border-radius:6px;padding:8px 10px;overflow-x:auto;white-space:pre;color:var(--fg)}
+
+/* DB, 순서 */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
+.db td,.db th{font-size:13px}
+.db table{min-width:420px}
+.plan{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.plan li{display:flex;gap:12px;align-items:flex-start;font-size:14px}
+.plan .day{flex:0 0 auto;font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);color:var(--accent);white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+@media (max-width:560px){ h1{font-size:24px} .flow .step + .step{border-left:none;border-top:1px dashed var(--line);padding-top:10px} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<style>
+.diff{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:10px}
+.diff li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.diff li b{font-size:13px;color:var(--accent)}
+.diff li span{color:var(--muted)}
+.opt{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;border:1px dashed var(--muted);color:var(--muted);margin-left:6px;vertical-align:1px}
+.figref{font-size:12px;color:var(--muted);font-family:var(--mono)}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <span class="eyebrow">Spring MVC · 중간점검용 웹 · 최종 다크 시안 기준</span>
+  <h1>주사위 중간점검 파일 지도</h1>
+  <p>myabweb에서 쓰던 방식(<code>.do</code> 주소, <code>controller · dao · to</code> 패키지, <code>mapper-*.xml</code> + <code>SqlSession</code>, <code>WEB-INF/views/*.jsp</code>)을 그대로 따르고, 그 사이에 <code>service</code> 한 칸만 추가했어요. 어떤 버튼을 눌렀을 때 어느 파일을 열어보면 되는지 바로 따라갈 수 있게, 화면마다 요청 하나가 거치는 파일을 한 줄로 늘어놓았습니다.</p>
+  <div class="legend" aria-label="계층 색 범례">
+    <span class="L C"><b>C</b>Controller</span><span class="L S"><b>S</b>Service</span><span class="L D"><b>D</b>DAO</span><span class="L M"><b>M</b>mapper.xml</span><span class="L T"><b>T</b>TO</span><span class="L V"><b>V</b>JSP · JS</span><span class="L X"><b>·</b>redirect · 세션 등</span>
+  </div>
+</header>
+
+<section>
+  <div class="sec-head">
+    <h2>최종 시안을 보고 바뀐 것</h2>
+    <p>처음 버전(예전 화면 시안 기준)에서 달라진 부분이에요.</p>
+  </div>
+  <ul class="diff">
+    <li><b>메뉴가 위쪽 탭으로</b><span>왼쪽 세로 메뉴(sidebar.jspf)를 없애고, header.jspf 하나에 탭 4개(분석 지도 · 현장 확인 리스트 · 보관함 · 분석 리포트)를 넣었어요.</span></li>
+    <li><b>취약요인 "개수"에서 "점수"로</b><span>지하층 +30, 옥탑·위반 +20, 노후·침수 +15, 저지대 +5 같은 가중치 합계를 100점 만점으로 환산한 게 취약도 점수예요. 왼쪽 레이어 트리와 가중치 조정을 받는 AnalysisCriteriaTO, 상세 패널의 점수 구성 ScoreItemTO가 새로 생겼어요.</span></li>
+    <li><b>지도 화면에 패널이 늘었어요</b><span>분석 전에는 현장 확인됨 핀만 보이고, "분석 실행"을 누르면 점수 핀과 오른쪽 검색 결과 리스트(정렬, 페이지)가 떠요. 상세 패널에는 점수 구성, 건축물대장, 담당자 메모가 있어요.</span></li>
+    <li><b>진행 상태 = 보관함 탭</b><span>보관함의 신규 · 진행중 · 완료됨 탭이 메인의 진행해야 하는 · 진행중 · 진행완료 건수와 같은 기준이에요. 상태 컬럼을 따로 저장하지 않고 SQL에서 계산해서, 세 화면 숫자가 항상 같아요.</span></li>
+    <li><b>현장 확인 리스트가 3화면으로</b><span>목록(03, 펼치면 건물과 미니 지도), 수정(03-1, 보관함 건물 넣고 빼기), 상세 + 경로 지도(03-2). JSP 3개, JS 4개로 나눴어요.</span></li>
+    <li><b>건물을 누르면 거주 가구도 (11/7 추가)</b><span>오른쪽 패널을 "건물 정보 / 거주 가구" 탭으로 나눴어요. 같은 점수면 더 취약한 가구가 사는 건물이 우선순위가 높아요. 거주자 쪽은 파일 5개(ResidentTO, ResidentDAO, mapper-resident.xml, building-panel.jspf, resident-panel.js)에 모았어요. 데이터는 양천구 가구원 더미(1행 = 가구원 1명)라 "김영희 79세 · 심한 장애 · 차상위"처럼 사람 단위로 떠요.</span></li>
+    <li><b>지도 API: 카카오 → 네이버 (11/7)</b><span>다크 모드 때문에 네이버 지도로 바꿨어요. 파일 구조는 그대로이고, 지도를 직접 다루는 map-config·map-marker·map-main·field-map.js와 JSP의 SDK script 태그, app.properties 키만 바뀌어요. Java 쪽은 bbox(경도·위도 범위)만 받아서 영향이 없어요.</span></li>
+    <li><b>대시보드 = 분석 리포트(06)</b><span>요약 카드, 구·동별 취약 건물 막대, 요인별 정확도, LLM 요약이 있는 화면이에요. 메인의 건수 칩을 누르면 여기로 와서 상태별 건물 목록이 같이 보이게 했어요.</span></li>
+  </ul>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>요청 하나가 지나가는 길</h2>
+    <p>모든 기능이 이 순서를 지켜요. 버그가 나면 왼쪽부터 한 칸씩 열어보면 됩니다.</p>
+  </div>
+  <div class="flow">
+    <div class="step"><span class="L X"><b>0</b>Interceptor</span><span class="what">로그인 안 했으면 <code>loginform.do</code>로 돌려보냄</span></div>
+    <div class="step"><span class="L C"><b>C</b>Controller</span><span class="what">주소(<code>.do</code>)를 받고 파라미터를 꺼냄. 판단은 하지 않음</span></div>
+    <div class="step"><span class="L S"><b>S</b>Service</span><span class="what">업무 규칙(리스트 저장, 기본 가중치 채우기, 페이지 계산)</span></div>
+    <div class="step"><span class="L D"><b>D</b>DAO</span><span class="what"><code>session.selectList("mapper-xxx.아이디")</code> 한 줄씩만</span></div>
+    <div class="step"><span class="L M"><b>M</b>mapper.xml</span><span class="what">SQL은 여기에만 (점수 계산, 상태 계산 포함)</span></div>
+    <div class="step"><span class="L T"><b>T</b>TO</span><span class="what">SQL 결과 한 행, 또는 요청 조건을 담는 상자</span></div>
+    <div class="step"><span class="L V"><b>V</b>JSP / JSON</span><span class="what">페이지면 JSP, 지도 데이터면 JSON으로 JS가 그림</span></div>
+  </div>
+  <p class="flow-note">페이지를 여는 요청은 <code>@Controller</code> → JSP (myabweb의 <code>EmpController</code>), 지도처럼 화면 안에서 데이터만 다시 받는 요청은 <code>@RestController</code> → JSON (myabweb의 <code>EmpRESTController</code>)으로 나눴어요.</p>
+</section>
+
+<section id="branches">
+  <div class="sec-head">
+    <h2>화면별 가지</h2>
+    <p>화면 하나에서 나가는 요청(가지)마다, 거치는 파일과 메서드 이름을 순서대로 적었어요. DAO 메서드 이름과 mapper id를 똑같이 맞춰서 검색 한 번으로 찾을 수 있어요. 오른쪽 회색 글씨는 피그마 프레임 번호예요.</p>
+  </div>
+  <div class="tabs" role="group" aria-label="화면 고르기" id="screenTabs"></div>
+  <div id="screenBox"></div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>요청 따라가기 예시</h2>
+    <p>자주 헷갈릴 흐름 네 개를 처음부터 끝까지 적었어요.</p>
+  </div>
+  <div class="scen" id="scenBox"></div>
+</section>
+
+<section id="files">
+  <div class="sec-head">
+    <h2>전체 파일 목록</h2>
+    <p>이클립스 프로젝트 폴더 순서 그대로예요. 화면을 고르면 그 화면에 필요한 파일만 남습니다.</p>
+  </div>
+  <div class="filters" role="group" aria-label="화면으로 거르기" id="fileFilters"></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:30%">파일</th><th style="width:9%">계층</th><th>하는 일</th><th style="width:22%">쓰는 화면</th></tr></thead>
+      <tbody id="fileBody"></tbody>
+    </table>
+  </div>
+  <p class="count" id="fileCount"></p>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>유지보수를 위한 약속 7가지</h2>
+    <p>myabweb에서 그대로 가져온 것과, 파일이 늘어나면서 꼭 바꿔야 하는 것을 함께 적었어요.</p>
+  </div>
+  <div class="rules">
+    <div class="rule"><h3>1. Controller는 DAO를 직접 부르지 않기</h3><p>myabweb의 <code>AbController</code>는 <code>AddrBookDAO</code>를 바로 불렀는데, 여기서는 꼭 Service를 거쳐요. 그래야 "상태 건수"처럼 세 화면이 같이 쓰는 로직이 한 곳에만 있어요.</p></div>
+    <div class="rule"><h3>2. DAO는 자기 Service만 부르기</h3><p><code>ArchiveDAO</code>는 <code>ArchiveService</code>만 써요. 대시보드가 상태 건수가 필요하면 <code>ArchiveService.getStatusCount()</code>를 부르지, <code>ArchiveDAO</code>를 직접 잡지 않아요.</p></div>
+    <div class="rule"><h3>3. mapper id는 namespace까지 붙여 부르기</h3><p>myabweb은 <code>selectList("getList")</code>처럼 id만 썼는데, mapper가 5개가 되면 같은 id가 생겨 오류가 나요.</p><div class="ex">session.selectList("mapper-field.getItemList", listId);</div></div>
+    <div class="rule"><h3>4. 이름은 4칸 모두 같은 단어로</h3><p>Controller는 짧게, Service는 동사+대상, DAO 메서드와 mapper id는 완전히 같게.</p><div class="ex">MapRESTController.results()
+ → MapService.getResultPage()
+ → BuildingDAO.getResultList()
+ → mapper-building.xml #getResultList</div></div>
+    <div class="rule"><h3>5. 진행 상태는 저장하지 않고 계산하기</h3><p>보관함 건물(vulnerability_factor)이 현장 확인 리스트(survey_plan)에 없으면 TODO(신규), 담겼지만 조사 기록(survey_record)이 없으면 DOING(진행중), 기록이 있으면 DONE(완료). <code>mapper-archive.xml</code>의 <code>&lt;sql id="statusExpr"&gt;</code> 한 조각으로 계산하고, 라벨은 <code>common/WorkStatus.java</code>에만 적어요.</p></div>
+    <div class="rule"><h3>7. 거주자 데이터는 한 곳으로만 들어오기</h3><p>거주자 테이블(household · person · residency · arrears) 컬럼을 읽는 곳은 <code>mapper-resident.xml</code>뿐이에요. 개인 우선순위 가점은 <code>&lt;sql id="priorityExpr"&gt;</code> 한 조각(고위험고립, 75세 이상, 심한 장애, 차상위·기초연금, 건보료 체납, 독박돌봄, 지하·옥탑층)이고, 건물 우선순위 정렬도 이걸 include해요. 컬럼이 또 바뀌면 이 mapper, <code>ResidentTO</code>, <code>resident-panel.js</code> 세 파일만 고치면 돼요. person.mbr_id는 로그인 회원(MemberTO)과 헷갈리니 TO에서는 residentId로 받아요.</p></div>
+    <div class="rule"><h3>6. 점수 계산 SQL도 한 군데서만</h3><p><code>mapper-building.xml</code>의 <code>&lt;sql id="scoreExpr"&gt;</code>가 기준값·가중치로 점수를 만들어요. 도넛·핀·결과 리스트·상세, 그리고 대시보드(<code>&lt;include refid="mapper-building.scoreExpr"/&gt;</code>)까지 이 조각 하나를 같이 써요.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="two">
+    <div class="card db">
+      <h3>DB 테이블 12개 <span class="muted" style="font-weight:400;font-size:13px">(field_survey · db/01_create_tables.sql → 02_load_data.sql)</span></h3>
+      <div class="table-wrap" style="border:none;background:transparent">
+      <table>
+        <thead><tr><th>테이블</th><th>한 줄 = · 주요 컬럼</th><th>TO</th></tr></thead>
+        <tbody>
+          <tr><td class="path">users</td><td>로그인 사용자 · user_id PK, login_id, password_hash (테스트 admin / 1234)</td><td><span class="L T">MemberTO</span></td></tr>
+          <tr><td class="path">building</td><td>건물 1동 · 3gu_bld_db.csv 31컬럼 · 72,961행 (bld_id VARCHAR(28) PK, sgg_cd, emd_nm, dong_nm, lng, lat, ugrnd_res, sp_type·sp_nm, viol_yn, useapr_day, units, flood_cnt, elev_m, price_pct …)</td><td><span class="L T">BuildingTO</span></td></tr>
+          <tr><td class="path">household <span class="opt">더미</span></td><td>가구 1개 · 460,151 · hh_id, sgg_cd, risk_grade, 기초생활·차상위·한부모·독박돌봄, 사각지대</td><td rowspan="4"><span class="L T">ResidentTO</span></td></tr>
+          <tr><td class="path">person <span class="opt">더미</span></td><td>가구원 1명 · 999,314 · mbr_id, hh_id, 이름, 나이, 생년월일, 장애, 기초연금 + 발굴 정보(crisis_info 등, 사람마다 다름)</td></tr>
+          <tr><td class="path">residency <span class="opt">더미</span></td><td>가구의 거주지 · 가구당 1줄 · bld_id, res_flr, dong_nm, ho_nm(전유부 실제 호, 없으면 NULL)</td></tr>
+          <tr><td class="path">arrears <span class="opt">더미</span></td><td>가구의 체납 · 건보료 (가구원 중 한 명이라도 Y면 Y)</td></tr>
+          <tr><td class="path">vulnerability_list</td><td>분석 1회 = 보관함 묶음 · user_id, sgg_cd, title, criteria(가중치 JSON)</td><td rowspan="2"><span class="L T">ArchiveTO</span></td></tr>
+          <tr><td class="path">vulnerability_factor</td><td>그 분석 안의 건물 1동 = 보관함 한 줄 · bld_id, vulnerability_score(저장 당시 점수). UNIQUE(분석, 건물)</td></tr>
+          <tr><td class="path">survey_list</td><td>현장 확인 리스트 1개 · user_id, title</td><td><span class="L T">FieldListTO</span></td></tr>
+          <tr><td class="path">survey_plan</td><td>리스트에 담긴 건물 1동 · survey_id, factor_id, visit_order, plan_date</td><td><span class="L T">FieldItemTO</span></td></tr>
+          <tr><td class="path">visit_history</td><td>방문 1번 · user_id, bld_id, visited_at, result(MET/ABSENT/REFUSED/OTHER)</td><td rowspan="2"><span class="L T">FieldItemTO</span></td></tr>
+          <tr><td class="path">survey_record</td><td>조사 기록 1건 · plan_id, visit_id, content → 있으면 그 건물 완료</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <p class="muted" style="font-size:13px">클래스·mapper 이름은 화면 기준(Member, Archive, Field, Resident) 그대로 두고 안의 SQL만 위 테이블을 써요. 더미 ID는 구마다 1부터라 적재 때 구로 +1,000,000 / 양천 +2,000,000 / 영등포 +3,000,000을 더했어요. 진행 상태는 vulnerability_factor · survey_plan · survey_record를 JOIN해서 계산하고, 현장 확인 리스트의 "완료됨" 탭은 "리스트의 모든 건물에 survey_record가 있으면 완료"로 계산해요. 고시원 요인은 <code>sp_type = '고시원'</code>, 저가는 <code>price_pct</code>, 옥탑은 <code>residency.res_flr = '옥탑층'</code> 가구가 있는 건물로 계산해요. 에너지 급감은 뺐어요.</p>
+    </div>
+    <div class="card">
+      <h3>이틀 작업 순서</h3>
+      <ul class="plan">
+        <li><span class="day">토 오전</span><span>myabweb 복사 → 패키지명 바꾸기, 설정 XML 4개, <code>db/01_create_tables.sql</code> → <code>02_load_data.sql</code> 순서로 실행</span></li>
+        <li><span class="day">토 오전</span><span>로그인 줄 전체(<code>LoginController → MemberService → MemberDAO</code>)와 <code>LoginInterceptor</code>, 공통 <code>header.jspf</code>(탭 4개)</span></li>
+        <li><span class="day">토 오후</span><span>지도: 레이어 패널 → "분석 실행" → <code>clusters.do</code> 격자 도넛, 확대 시 <code>buildings.do</code> 핀, <code>results.do</code> 오른쪽 리스트, <code>building.do</code> 상세</span></li>
+        <li><span class="day">일 오전</span><span>보관함 담기 → 보관함 탭·목록 → 현장 확인 리스트에 담기 → 수정 → 상세·확인 처리</span></li>
+        <li><span class="day">일 오후</span><span>분석 리포트(대시보드), 메인 상단 진행 건수 칩 연결, 다크 디자인 다듬기</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head">
+    <h2>시간 남으면 <span class="opt">선택</span></h2>
+    <p>최종 시안에는 있지만 이틀 안에 하기 어렵거나, 앱·외부 API·현장 데이터가 있어야 의미가 있는 것들이에요. 화면에는 버튼만 두고 나중에 붙여도 구조가 안 깨지게 자리만 정해 뒀어요.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:26%">기능 (프레임)</th><th style="width:34%">추가될 파일</th><th>왜 미뤄도 되는지</th></tr></thead>
+      <tbody id="optBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<footer>패키지 이름 <code>lx.edu.jusawi</code>는 예시예요. 실제 프로젝트 이름으로 바꾸면 <code>servlet-context.xml</code>의 component-scan과 mapper의 TO 경로도 같이 바꿔 주세요. 화면 구성은 최종.zip의 다크 시안 12장(01 ~ 06) 기준입니다.</footer>
+</div>
+
+<script>
+const SCREENS = [
+  {id:'login', name:'로그인', fig:'01', desc:'사원번호·비밀번호로 로그인해요. 세션에 회원 정보를 넣으면 헤더에 "구로구청 복지정책과 · 김구로 주무관"이 떠요. 그 뒤 모든 .do 요청은 LoginInterceptor가 먼저 검사해요.',
+   branches:[
+    {m:'GET', u:'loginform.do', why:'로그인 화면 열기', chain:[['C','LoginController.loginForm()'],['V','login.jsp + login.js(사원번호 저장)']]},
+    {m:'POST', u:'login.do', why:'로그인 버튼', chain:[['C','LoginController.login(loginId, pw)'],['S','MemberService.login()'],['D','MemberDAO.getMember()'],['M','mapper-member #getMember'],['T','MemberTO'],['X','session "loginMember" 저장 → redirect:map.do']]},
+    {m:'GET', u:'logout.do', why:'헤더의 로그아웃', chain:[['C','LoginController.logout()'],['X','session.invalidate() → redirect:loginform.do']]},
+    {m:'모든', u:'*.do', why:'로그인 검사 · 30분 자동 로그아웃', chain:[['X','LoginInterceptor.preHandle()'],['X','세션 없으면 loginform.do로'],['X','web.xml session-timeout 30']]}
+  ]},
+  {id:'map', name:'메인(분석 지도)', fig:'02 · 02-1 · 02-2', desc:'왼쪽 레이어 트리(기준값 슬라이더)와 가중치 조정으로 조건을 만들고 "분석 실행". 줌 15~17은 화면 120px 격자 칸마다 점수 구간별 도넛 묶음, 18 이상은 건물 핀(화면 안 점수순 최대 1500), 14 이하는 구 경계만(살피구로 지도 방식). 오른쪽에 검색 결과 리스트와 건물 상세. 헤더 아래에 진행해야 하는 · 진행중 · 진행완료 건수 칩, 누르면 대시보드로 가요.',
+   branches:[
+    {m:'GET', u:'map.do', why:'화면 열기 + 건수 칩 3개', chain:[['C','MapController.map()'],['S','ArchiveService.getStatusCount()'],['D','ArchiveDAO.getStatusCount()'],['M','mapper-archive #getStatusCount'],['T','StatusCountTO'],['V','map.jsp 칩 → dashboard.do?status=']]},
+    {m:'GET', u:'api/map/checked.do', why:'분석 전 · 현장 확인됨 핀', chain:[['C','MapRESTController.checked()'],['S','MapService.getCheckedMarkers()'],['D','BuildingDAO.getCheckedMarkerList()'],['M','mapper-building #getCheckedMarkerList'],['T','BuildingMarkerTO'],['V','JSON → map-marker.js drawChecked()']]},
+    {m:'GET', u:'api/map/clusters.do?bbox&cell', why:'분석 실행 후 · zoom 15~17 · 격자 도넛 묶음', chain:[['C','MapRESTController.clusters(AnalysisCriteriaTO)'],['S','MapService.getClusters()'],['D','BuildingDAO.getClusterList()'],['M','mapper-building #getClusterList'],['T','ClusterTO'],['V','JSON → map-marker.js drawDonut()']]},
+    {m:'GET', u:'api/map/buildings.do', why:'분석 실행 후 · 확대 · 화면 안 건물 마커', chain:[['C','MapRESTController.buildings(bbox, 조건)'],['S','MapService.getBuildingMarkers()'],['D','BuildingDAO.getMarkerList()'],['M','mapper-building #getMarkerList'],['T','BuildingMarkerTO'],['V','JSON → map-marker.js drawPin()']]},
+    {m:'GET', u:'api/map/results.do', why:'오른쪽 검색 결과 리스트 (정렬 · 페이지 · 주소 검색)', chain:[['C','MapRESTController.results(조건, sort, page, q)'],['S','MapService.getResultPage()'],['D','BuildingDAO.getResultList() / getResultCount()'],['M','mapper-building #getResultList #getResultCount'],['T','PageTO · BuildingMarkerTO'],['V','JSON → map-result.js']]},
+    {m:'GET', u:'api/map/building.do', why:'마커·리스트 클릭 · 건물 상세 (점수 구성)', chain:[['C','MapRESTController.building(bldId, 조건)'],['S','MapService.getBuildingDetail()'],['D','BuildingDAO.getBuilding()'],['M','mapper-building #getBuilding'],['T','BuildingTO + ScoreItemTO 목록'],['V','JSON → map-panel.js']]},
+    {m:'GET', u:'api/map/residents.do?bldId=', why:'상세의 "거주 가구" 탭 (처음 누를 때 불러옴)', chain:[['C','MapRESTController.residents(bldId)'],['S','MapService.getResidentList()'],['D','ResidentDAO.getResidentList()'],['M','mapper-resident #getResidentList (priorityExpr 순)'],['T','ResidentTO'],['V','JSON → resident-panel.js']]},
+    {m:'GET', u:'api/map/resident.do?residentId=', why:'거주자 카드의 "정보 확인하기" (동·호수만 표시, 이름·생년월일 원문은 행복e음에서)', chain:[['C','MapRESTController.residentDetail(residentId)'],['S','MapService.getResidentDetail()'],['D','ResidentDAO.getResident()'],['M','mapper-resident #getResident'],['T','ResidentTO (동·호수)'],['V','JSON → resident-panel.js가 그 카드만 펼침']]},
+    {m:'POST', u:'api/archive/add.do', why:'상세의 "보관함에 저장"', chain:[['C','ArchiveRESTController.add(bldId, score, criteria)'],['S','ArchiveService.add() (지금 분석 조건의 vulnerability_list가 없으면 먼저 만듦)'],['D','ArchiveDAO.insertList() · insertArchive()'],['M','mapper-archive #insertList (vulnerability_list) #insertArchive (vulnerability_factor)'],['T','ArchiveTO'],['V','JSON → map-panel.js 토스트']]}
+  ]},
+  {id:'field', name:'현장확인리스트', fig:'03 · 03-1 · 03-2', desc:'목록(펼치면 건물 + 미니 지도), 수정(보관함 건물을 넣고 빼기, 방문 순서), 상세(경로 지도 + 표 + 확인 처리) 세 화면이에요.',
+   branches:[
+    {m:'GET', u:'fieldlist.do?tab=DOING', why:'03 목록 (진행중 / 완료됨 탭, 펼침)', chain:[['C','FieldController.list(tab, q)'],['S','FieldService.getFieldLists() (리스트마다 items 채움)'],['D','FieldDAO.getFieldLists() / getItemList()'],['M','mapper-field #getFieldLists #getItemList'],['T','FieldListTO · FieldItemTO'],['V','fieldlist.jsp + fieldlist.js']]},
+    {m:'GET', u:'fieldedit.do?listId=', why:'03-1 수정 화면 (listId 없으면 새 리스트)', chain:[['C','FieldController.editForm(listId)'],['S','ArchiveService.getArchiveList() + FieldService.getFieldList()'],['D','ArchiveDAO.getArchiveList() / FieldDAO.getFieldList() · getItemList()'],['M','mapper-archive · mapper-field'],['T','ArchiveTO · FieldListTO · FieldItemTO'],['V','fieldedit.jsp + fieldedit.js']]},
+    {m:'POST', u:'fieldedit.do', why:'03-1 "변경 내용 저장"', chain:[['C','FieldController.edit(listId, listName, factorIds[])'],['S','FieldService.saveList()'],['D','FieldDAO.insertList() 또는 updateList() → deleteItems()(기록 없는 것만) → insertItem()'],['M','mapper-field'],['X','redirect:fielddetail.do?listId=']]},
+    {m:'POST', u:'fieldadditems.do', why:'보관함에서 담기 (listId=0이면 새 리스트)', chain:[['C','FieldController.addItems(listId, factorIds[])'],['S','FieldService.addItems()'],['D','FieldDAO.insertList() · insertItem()'],['M','mapper-field #insertList #insertItem'],['X','redirect:fieldedit.do?listId=']]},
+    {m:'GET', u:'fielddetail.do?listId=', why:'03-2 상세 + 경로 지도', chain:[['C','FieldController.detail(listId)'],['S','FieldService.getFieldLists() + getItemList()'],['D','FieldDAO.getFieldLists() / getItemList()'],['M','mapper-field'],['T','FieldListTO · FieldItemTO'],['V','fielddetail.jsp + fielddetail.js + field-map.js']]},
+    {m:'POST', u:'fieldcheck.do', why:'상태 칸 "확인 전 ↔ 확인 완료"', chain:[['C','FieldController.check(planId, listId)'],['S','FieldService.changeCheck()'],['D','FieldDAO.insertVisit() → insertRecord()'],['M','mapper-field #insertVisit (visit_history) #insertRecord (survey_record)'],['X','redirect:fielddetail.do?listId=']]}
+  ]},
+  {id:'archive', name:'보관함', fig:'04', desc:'지도에서 저장한 건물 목록. 신규 · 진행중 · 완료됨 탭(= 메인 건수 칩), 구·동·검색 조건, 취약도·우선순위·최근 정렬. 행마다 "저장 ▾"로 특정 리스트에 넣거나, 체크 후 "선택 건물 현장 확인 리스트에 담기".',
+   branches:[
+    {m:'GET', u:'archive.do?status=TODO', why:'화면 열기 (탭 · 조건 · 정렬 · 페이지)', chain:[['C','ArchiveController.list(ArchiveSearchTO)'],['S','ArchiveService.getArchivePage() / getStatusCount()'],['D','ArchiveDAO.getArchiveList() · getArchiveCount() · getStatusCount()'],['M','mapper-archive'],['T','ArchiveTO · PageTO · StatusCountTO'],['V','archive.jsp + archive.js']]},
+    {m:'〃', u:'(같은 요청)', why:'"저장 ▾" 메뉴에 띄울 내 리스트', chain:[['C','ArchiveController.list()'],['S','FieldService.getFieldLists(userId, DOING)'],['D','FieldDAO.getFieldLists()'],['M','mapper-field #getFieldLists'],['T','FieldListTO'],['V','archive.jsp 드롭다운']]},
+    {m:'GET', u:'api/archive/detail.do?bldId=', why:'행 클릭 · 상세 (ajax, 페이지 이동 없음)', chain:[['C','ArchiveRESTController.detail(bldId)'],['S','MapService.getBuildingDetail() (지도 상세와 같은 메서드)'],['D','BuildingDAO.getBuilding()'],['M','mapper-building #getBuilding'],['T','BuildingTO + ScoreItemTO 목록'],['V','JSON → archive.js가 archive.jsp 안 상세 패널 채움']]},
+    {m:'GET', u:'api/map/residents.do?bldId=', why:'상세 패널의 "거주 가구" 탭', chain:[['V','archive.js → resident-panel.js'],['C','MapRESTController.residents()'],['X','메인 지도 탭의 같은 가지를 그대로 씀']]},
+    {m:'POST', u:'fieldadditems.do', why:'"저장 ▾" 또는 "선택 건물 담기"', chain:[['V','archive.js가 숨은 form 채워 submit'],['C','FieldController.addItems()'],['X','현장확인리스트 탭의 같은 가지']]},
+    {m:'POST', u:'archivedelete.do', why:'선택 삭제', chain:[['C','ArchiveController.delete(factorIds)'],['S','ArchiveService.delete()'],['D','ArchiveDAO.deleteArchive()'],['M','mapper-archive #deleteArchive'],['X','redirect:archive.do']]}
+  ]},
+  {id:'dash', name:'대시보드(분석 리포트)', fig:'06', desc:'요약 카드(취약공간 60점 이상, 현장 확인 완료), 구·동별 취약 건물 막대. 여기에 메인 칩과 같은 진행 상태 카드 3개와, 고른 상태의 건물 목록을 더했어요.',
+   branches:[
+    {m:'GET', u:'dashboard.do?gu=&month=&status=', why:'요약 카드', chain:[['C','DashboardController.dashboard()'],['S','DashboardService.getKpi()'],['D','DashboardDAO.getKpi()'],['M','mapper-dashboard #getKpi'],['T','KpiTO'],['V','dashboard.jsp 카드']]},
+    {m:'〃', u:'(같은 요청)', why:'진행 상태 카드 3개 (메인 칩과 같은 숫자)', chain:[['C','DashboardController.dashboard()'],['S','ArchiveService.getStatusCount()'],['D','ArchiveDAO.getStatusCount()'],['M','mapper-archive #getStatusCount'],['T','StatusCountTO'],['V','dashboard.jsp 상태 카드']]},
+    {m:'〃', u:'(같은 요청)', why:'구·동별 취약 건물 막대', chain:[['C','DashboardController.dashboard()'],['S','DashboardService.getDongVulnList()'],['D','DashboardDAO.getDongVulnList()'],['M','mapper-dashboard #getDongVulnList (scoreExpr include)'],['T','DongStatTO'],['V','dashboard.js (Chart.js)']]},
+    {m:'〃', u:'(같은 요청)', why:'칩으로 들어왔을 때 · 그 상태의 건물 목록', chain:[['C','DashboardController.dashboard()'],['S','ArchiveService.getArchiveList(status)'],['D','ArchiveDAO.getArchiveList()'],['M','mapper-archive #getArchiveList'],['T','ArchiveTO'],['V','dashboard.jsp 표']]}
+  ]}
+];
+
+const SCENARIOS = [
+  {t:'메인의 "진행중 3건" 칩을 누르면', steps:[
+    '<code>map.do</code> → <code>MapController.map()</code>이 <code>ArchiveService.getStatusCount(userId)</code> 호출',
+    '<code>mapper-archive.xml #getStatusCount</code>가 <code>statusExpr</code>로 상태를 계산해서 GROUP BY',
+    '<code>StatusCountTO{todo, doing, done}</code>를 model에 담아 <code>map.jsp</code> 칩 3개로 출력',
+    '칩은 <code>&lt;a href="dashboard.do?status=DOING"&gt;</code> 링크',
+    '<code>DashboardController</code>도 같은 <code>getStatusCount()</code>와 <code>getArchiveList(status)</code>를 부름',
+    '보관함 탭 숫자도 같은 메서드라 세 화면 숫자가 항상 같음']},
+  {t:'"분석 실행"을 누르면', steps:[
+    '<code>map-layer.js</code>가 체크된 요인, 슬라이더 값, 가중치를 모아 조건 객체를 만듦',
+    '<code>map-main.js</code>가 줌 레벨을 보고 <code>map-api.js</code>의 <code>getDongs()</code> 또는 <code>getBuildings(bbox)</code>, 그리고 <code>getResults(page=1)</code> 호출',
+    '조건은 쿼리 파라미터로 가서 <code>AnalysisCriteriaTO</code>에 자동으로 담김 (myabweb에서 form → TO 받던 것과 같은 방식)',
+    '<code>MapService</code>가 비어 있는 가중치를 기본값으로 채우고 <code>BuildingDAO</code> 호출',
+    '<code>mapper-building.xml</code>에서 <code>&lt;include refid="scoreExpr"/&gt;</code>로 점수 계산, 60점 이상만',
+    '<code>map-marker.js</code>가 도넛·마커를, <code>map-result.js</code>가 오른쪽 리스트를 그림']},
+  {t:'보관함에서 현장 확인 리스트에 담으면', steps:[
+    '체크 후 "선택 건물 현장 확인 리스트에 담기" → <code>archive.js</code>가 <code>listId=0</code>, <code>factorIds</code>로 form submit',
+    '<code>fieldadditems.do</code> → <code>FieldController.addItems()</code> → <code>FieldService.addItems()</code>',
+    '<code>listId</code>가 0이면 <code>FieldDAO.insertList()</code>로 survey_list 새 줄, 그다음 <code>insertItem()</code> × n (survey_plan)',
+    '<code>redirect:fieldedit.do?listId=새 번호</code> → 03-1에서 이름·순서 정하고 저장',
+    '이 순간부터 그 건물들은 보관함 "신규" → "진행중" 탭으로 이동 (상태를 계산하니 따로 바꿀 것 없음)']},
+  {t:'현장 확인 상세에서 확인 완료를 누르면', steps:[
+    '03-2 표의 상태 버튼이 <code>fieldcheck.do</code>로 form POST',
+    '<code>FieldController.check(planId, listId)</code> → <code>FieldService.changeCheck()</code>',
+    '<code>FieldDAO.insertVisit()</code>가 visit_history(MET)를, <code>insertRecord()</code>가 survey_record를 저장',
+    '<code>redirect:fielddetail.do?listId=</code> 로 같은 화면 새로고침',
+    '보관함에서는 "완료됨", 메인 칩은 진행완료 +1, 지도에는 현장 확인됨 핀으로 보임',
+    '원래는 앱이 하는 일이라, 중간점검에서는 웹 버튼으로 대신해요']}
+];
+
+const B = 'src/main/java/lx/edu/jusawi/';
+const FILES = [
+  {dir:'(프로젝트 루트)'},
+  {f:'pom.xml', L:'X', r:'myabweb pom 그대로 (Spring MVC, MyBatis, MySQL, Jackson, Lombok, JSTL). 추가 라이브러리 없음', s:['all']},
+  {f:'createtable_mysql.sql', L:'M', r:'= reference/db/01_create_tables.sql (12개 테이블 CREATE) + 02_load_data.sql (건물·더미 3구 적재, 테스트 계정 admin/1234). 두 파일을 그대로 가져다 씀', s:['all']},
+
+  {dir:'src/main/resources', note:'설정과 SQL'},
+  {f:'root-context.xml', L:'X', r:'DataSource, SqlSessionFactory(mapper-*.xml 자동 등록, 언더스코어→카멜), SqlSessionTemplate, 트랜잭션 매니저(리스트 저장 한 번에), app.properties 읽기', s:['all']},
+  {f:'servlet-context.xml', L:'X', r:'JSP ViewResolver(/WEB-INF/views/), /resources/** 정적 파일, LoginInterceptor(/** 중 login·resources 제외), component-scan', s:['all']},
+  {f:'app.properties', L:'X', r:'네이버 지도 Client ID(ncpKeyId), 다크 스타일 ID, 기본 가중치(+30/+20/+15/+5), 기준점 60', s:['map','field','archive']},
+  {f:'logback.xml', L:'X', r:'콘솔 로그. mapper-* 로거를 trace로 두면 실행된 SQL이 보임', s:['all']},
+  {f:'mapper-member.xml', L:'M', r:'#getMember (users에서 login_id로 1명)', s:['login']},
+  {f:'mapper-building.xml', L:'M', r:'&lt;sql id="scoreExpr"&gt; 점수 계산 조각, #getClusterList, #getMarkerList, #getCheckedMarkerList, #getResultList, #getResultCount, #getBuilding', s:['map','dash']},
+  {f:'mapper-archive.xml', L:'M', r:'&lt;sql id="statusExpr"&gt; 상태 계산 조각, #getStatusCount, #getArchiveList, #getArchiveCount, #insertList, #insertArchive, #deleteArchive', s:['map','archive','field','dash']},
+  {f:'mapper-field.xml', L:'M', r:'#getFieldLists, #getFieldList, #getItemList, #insertList, #updateList, #deleteItems, #insertItem, #insertVisit, #insertRecord', s:['field','archive']},
+  {f:'mapper-resident.xml', L:'M', r:'&lt;sql id="priorityExpr"&gt; 개인 가점 조각, #getResidentList (건물 1동 거주자, 세대별로 묶고 가점 높은 순). household · person · residency · arrears는 여기서만 읽음. "정보 확인하기"는 residency의 dong_nm · ho_nm만. 컬럼 정의: data/pop_dum/new_pop_dum/pop_dummy_컬럼명세서.xlsx', s:['map','archive']},
+  {f:'mapper-dashboard.xml', L:'M', r:'#getKpi, #getDongVulnList (scoreExpr를 namespace 붙여 include)', s:['dash']},
+
+  {dir:B+'common'},
+  {f:'WorkStatus.java', L:'T', r:'진행 상태 enum: TODO "진행해야 하는(신규)", DOING "진행중", DONE "진행완료". 코드·라벨 한 곳', s:['map','archive','dash']},
+
+  {dir:B+'interceptor'},
+  {f:'LoginInterceptor.java', L:'X', r:'세션에 loginMember 없으면 loginform.do로 redirect (myabweb 것 그대로, 세션 키만 변경)', s:['all']},
+
+  {dir:B+'controller', note:'@Controller = JSP, @RestController = JSON'},
+  {f:'LoginController.java', L:'C', r:'loginform.do, login.do, logout.do', s:['login']},
+  {f:'MapController.java', L:'C', r:'map.do → 진행 건수와 네이버 지도 키, 기본 가중치를 model에 담아 map.jsp', s:['map']},
+  {f:'MapRESTController.java', L:'C', r:'api/map/ checked · dongs · buildings · results · building .do → JSON', s:['map']},
+  {f:'ArchiveController.java', L:'C', r:'archive.do, archivedelete.do', s:['archive']},
+  {f:'ArchiveRESTController.java', L:'C', r:'api/archive/add.do (지도 상세에서 저장), api/archive/detail.do (보관함 행 클릭 상세) → JSON', s:['map','archive']},
+  {f:'FieldController.java', L:'C', r:'fieldlist.do, fieldedit.do(GET/POST), fieldadditems.do, fielddetail.do, fieldcheck.do', s:['field','archive']},
+  {f:'DashboardController.java', L:'C', r:'dashboard.do?gu=&month=&status= → 카드·막대·상태 목록을 model에 담아 dashboard.jsp', s:['dash']},
+
+  {dir:B+'service', note:'업무 규칙은 여기에만'},
+  {f:'MemberService.java', L:'S', r:'login(loginId, pw): users 조회(login_id = 화면의 사원번호) 후 비밀번호 비교, 맞으면 MemberTO 아니면 null', s:['login']},
+  {f:'MapService.java', L:'S', r:'getCheckedMarkers, getClusters, getBuildingMarkers, getResultPage, getBuildingDetail. 빈 가중치 기본값 채우기, bbox 나누기, 점수 구성 목록 만들기', s:['map']},
+  {f:'ArchiveService.java', L:'S', r:'getStatusCount(메인·보관함·대시보드 공용), getArchiveList, getArchivePage, add(중복 저장 방지), delete', s:['map','archive','field','dash']},
+  {f:'FieldService.java', L:'S', r:'getFieldLists, getFieldList, getItemList, addItems, saveList(@Transactional), changeCheck', s:['field','archive']},
+  {f:'DashboardService.java', L:'S', r:'getKpi, getDongVulnList (대시보드에만 있는 통계)', s:['dash']},
+
+  {dir:B+'dao', note:'메서드 이름 = mapper id'},
+  {f:'MemberDAO.java', L:'D', r:'getMember', s:['login']},
+  {f:'BuildingDAO.java', L:'D', r:'getCheckedMarkerList, getClusterList, getMarkerList, getResultList, getResultCount, getBuilding', s:['map']},
+  {f:'ArchiveDAO.java', L:'D', r:'getStatusCount, getArchiveList, getArchiveCount, insertList, insertArchive, deleteArchive', s:['map','archive','field','dash']},
+  {f:'FieldDAO.java', L:'D', r:'getFieldLists, getFieldList, getItemList, insertList, updateList, deleteItems, insertItem, insertVisit, insertRecord', s:['field','archive']},
+  {f:'DashboardDAO.java', L:'D', r:'getKpi, getDongVulnList', s:['dash']},
+  {f:'ResidentDAO.java', L:'D', r:'getResidentList(마스킹된 목록), getResident(정보 확인하기 1명) (MapService만 부름)', s:['map','archive']},
+
+  {dir:B+'to', note:'테이블 1행, SQL 결과 1행, 또는 요청 조건 상자'},
+  {f:'MemberTO.java', L:'T', r:'users 1행 (userId, loginId, passwordHash). 세션에 들어가는 객체. 헤더에는 "서울시청 · loginId"', s:['login','all']},
+  {f:'BuildingTO.java', L:'T', r:'building 1행(31컬럼) + score + 점수 구성 목록 + 현장 확인 날짜. 상세 패널용', s:['map']},
+  {f:'ScoreItemTO.java', L:'T', r:'점수 구성 한 줄 (요인 이름, 설명 "1985년 준공, 41년", 점수 +15)', s:['map']},
+  {f:'ClusterTO.java', L:'T', r:'격자 칸 1개: 표시 좌표(평균), 건물 수(size), 기준점 이상 수(riskCount), 점수 구간별 건물 수 hist[4] (도넛 비율), 범위 extent, 1동이면 그 건물 point (살피구로 Cluster와 같은 모양)', s:['map']},
+  {f:'BuildingMarkerTO.java', L:'T', r:'bldId, lng, lat, score, 이름(주소+용도), 요인 요약 "지하층 · 노후 · 침수", 거주자 최고 가점·고위험고립 인원 (마커·결과 리스트 한 줄, 같은 점수일 때 정렬 기준)', s:['map']},
+  {f:'AnalysisCriteriaTO.java', L:'T', r:'요청 조건 상자: 요인별 on/off + 기준값(지하 1층, 30년, 반경 100m, 15m…) + 가중치 4개 + bbox + 구·동', s:['map','dash']},
+  {f:'PageTO.java', L:'T', r:'목록 + 전체 건수 + 현재 페이지 + 전체 페이지 (결과 리스트, 보관함 공용)', s:['map','archive']},
+  {f:'ArchiveTO.java', L:'T', r:'vulnerability_factor 1행(+ 분석 이름) + 건물 이름·주소·요인·점수 + 계산된 status + 우선순위', s:['map','archive','field','dash']},
+  {f:'ArchiveSearchTO.java', L:'T', r:'보관함 조회 조건 상자: status 탭, 구, 동, 검색어, 정렬, 페이지', s:['archive']},
+  {f:'FieldListTO.java', L:'T', r:'survey_list 1행 + 건물 수, 확인 수(1/4 진행바), 대표 주소 "외 3동", items 목록', s:['field','archive']},
+  {f:'FieldItemTO.java', L:'T', r:'survey_plan 1행(+ 방문 결과·기록 여부) + 건물 이름·주소·준공·층·요인·점수·좌표 (표 한 줄, 지도 핀 하나)', s:['field']},
+  {f:'StatusCountTO.java', L:'T', r:'todo, doing, done 세 숫자 (메인 칩 = 보관함 탭 = 대시보드 카드)', s:['map','archive','dash']},
+  {f:'KpiTO.java', L:'T', r:'취약공간 수(구별 내역 포함), 현장 확인 완료 수, 지난달 대비 증감', s:['dash']},
+  {f:'ResidentTO.java', L:'T', r:'거주자 한 명: residentId, householdId(세대 묶음), 동·호수와 이름·생년월일(목록에서는 "3층 · 김○희 · 47****"로 가림, 정보 확인하기 때만 "301동 302호". 이름·생년월일 원문은 웹에 안 띄우고 행복e음에서 조회), 나이, 성별, 층, 장애 정도, 차상위·기초연금·한부모·체납·독박돌봄 여부, risk_grade, 가점, 사유 태그', s:['map','archive']},
+  {f:'DongStatTO.java', L:'T', r:'구, 동 이름, 60점 이상 건물 수 (구·동별 막대 한 개)', s:['dash']},
+
+  {dir:'src/main/webapp/WEB-INF'},
+  {f:'web.xml', L:'X', r:'DispatcherServlet, ContextLoaderListener, UTF-8 인코딩 필터(한글 POST 깨짐 방지), session-timeout 30분, welcome → map.do', s:['all']},
+
+  {dir:'src/main/webapp/WEB-INF/views/include', note:'모든 화면이 같이 쓰는 조각'},
+  {f:'head.jspf', L:'V', r:'meta, Noto Sans KR, common.css, common.js', s:['all']},
+  {f:'building-panel.jspf', L:'V', r:'오른쪽 상세 패널 틀: 탭 2개(건물 정보 / 거주 가구)와 빈 칸. map.jsp, archive.jsp가 include', s:['map','archive']},
+  {f:'header.jspf', L:'V', r:'상단 바: 로고, 탭 4개(현재 탭 밑줄), "부서 · 이름 직급", 로그아웃', s:['map','field','archive','dash']},
+
+  {dir:'src/main/webapp/WEB-INF/views', note:'화면 1개 = JSP 1개'},
+  {f:'login.jsp', L:'V', r:'01 왼쪽 소개 + 오른쪽 로그인 폼 (실패 시 에러 문구)', s:['login']},
+  {f:'map.jsp', L:'V', r:'02 레이어 트리, 가중치 팝업, 구·동 선택, 검색, 범례, 건수 칩, 오른쪽 패널 틀(결과 리스트 / 건물 상세)', s:['map']},
+  {f:'fieldlist.jsp', L:'V', r:'03 진행중·완료됨 탭, 펼치는 리스트 카드(건물 표 + 미니 지도)', s:['field']},
+  {f:'fieldedit.jsp', L:'V', r:'03-1 왼쪽 보관함 건물 표, 오른쪽 리스트 구성, 아래 지도', s:['field']},
+  {f:'fielddetail.jsp', L:'V', r:'03-2 왼쪽 저장된 리스트, 경로 지도 + 소요시간 박스, 건물 표(상태 버튼)', s:['field']},
+  {f:'archive.jsp', L:'V', r:'04 탭, 조회 조건, 정렬, 체크박스 표, 행별 "저장 ▾" 메뉴, 숨은 담기 form, 오른쪽 상세 패널 틀(처음엔 숨김)', s:['archive']},
+  {f:'dashboard.jsp', L:'V', r:'06 조회 조건, 요약 카드, 진행 상태 카드 3개, 막대 차트 자리, 상태별 건물 표', s:['dash']},
+
+  {dir:'src/main/webapp/resources/css', note:'다크 디자인'},
+  {f:'common.css', L:'V', r:'다크 색 토큰(#0B0B0C 배경, #4A90E2 파랑), 헤더 탭, 버튼, 칩, 표, 상태 배지, 진행바', s:['all']},
+  {f:'login.css', L:'V', r:'로그인 화면만', s:['login']},
+  {f:'map.css', L:'V', r:'레이어 트리, 슬라이더, 가중치 팝업, 도넛·마커, 오른쪽 패널, 범례, 건수 칩 (살피구로 app.css 지도 부분 차용)', s:['map']},
+  {f:'field.css', L:'V', r:'현장 확인 3화면 공용: 리스트 카드, 진행바, 번호 핀, 경로 박스', s:['field']},
+  {f:'archive.css', L:'V', r:'탭, 조회 조건 바, 저장 드롭다운', s:['archive']},
+  {f:'dashboard.css', L:'V', r:'카드와 차트 영역', s:['dash']},
+
+  {dir:'src/main/webapp/resources/js'},
+  {f:'common.js', L:'V', r:'getJSON / postJSON 헬퍼, 숫자 포맷, 상태 라벨 (WorkStatus와 같은 값)', s:['all']},
+  {f:'resident-panel.js', L:'V', r:'"거주 가구" 탭: residents.do 호출, 맨 위에 건물 요약(고위험고립 n명 · 75세 이상 n명 · 장애 n명), 아래 세대별 카드(가림 처리), "정보 확인하기" 누르면 resident.do로 그 세대의 동·호수 표시(전유부 실제 호, 다가구는 동까지만). 지도·보관함 공용', s:['map','archive']},
+  {f:'login.js', L:'V', r:'"사원번호 저장" 체크 시 localStorage에 기억', s:['login']},
+  {f:'archive.js', L:'V', r:'전체 선택, "저장 ▾" 메뉴, 숨은 form submit, 행 클릭 시 detail.do 호출해 상세 패널 채우기', s:['archive']},
+  {f:'dashboard.js', L:'V', r:'JSP가 넣어 둔 구·동별 숫자로 Chart.js 막대 그리기', s:['dash']},
+
+  {dir:'src/main/webapp/resources/js/field', note:'현장 확인 3화면'},
+  {f:'field-map.js', L:'V', r:'공용: 번호 핀과 점선 경로 그리기, 모든 핀이 보이게 지도 맞춤, 주소에 마우스 올리면 핀 강조', s:['field']},
+  {f:'fieldlist.js', L:'V', r:'리스트 카드 펼치기/접기, 펼칠 때 미니 지도 그리기', s:['field']},
+  {f:'fieldedit.js', L:'V', r:'왼쪽 체크 → 오른쪽에 넣기, 빼기, 순서, 저장 시 factorIds 채우기', s:['field']},
+  {f:'fielddetail.js', L:'V', r:'경로 지도, 차량/도보 소요시간 계산(직선거리 기준)', s:['field']},
+
+  {dir:'src/main/webapp/resources/js/map', note:'살피구로 main.js(933줄)를 역할별 7개로 나눔'},
+  {f:'map-config.js', L:'V', r:'네이버 zoom 구간(14 이하 구 / 15~17 격자 도넛 / 18 이상 건물 핀), CLUSTER_PX 120, BUILDING_LIMIT 1500, 점수 색 구간, 기본 기준값·가중치 (살피구로 config.js 차용, 카카오 level은 네이버 zoom으로 뒤집어서 옮김)', s:['map']},
+  {f:'map-api.js', L:'V', r:'getChecked, getDongs, getBuildings, getResults, getBuilding, addArchive. 서버 호출은 이 파일에만', s:['map']},
+  {f:'map-layer.js', L:'V', r:'왼쪽 레이어 트리 접기, 슬라이더, 가중치 팝업 → 조건 객체 만들기', s:['map']},
+  {f:'map-marker.js', L:'V', r:'clusterSvg(격자 도넛 SVG), pointSvg·drawPin(물방울 핀), setMarks(바뀐 것만 다시 그림), drawChecked(현장 확인됨 핀). 그리기만 함', s:['map']},
+  {f:'map-result.js', L:'V', r:'오른쪽 검색 결과 리스트, 정렬, 페이지 버튼', s:['map']},
+  {f:'map-panel.js', L:'V', r:'상세 패널 탭 전환, "건물 정보" 탭(점수 구성 막대, 건축물대장, 메모), "보관함에 저장"', s:['map']},
+  {f:'map-main.js', L:'V', r:'시작점: 네이버 지도 만들기(다크 스타일), 분석 실행 버튼, 줌 레벨 보고 도넛/마커 전환, 이벤트 연결', s:['map']}
+];
+
+const OPT = [
+  ['폭우 시나리오 (02-3)', 'map-config.js에 가중치 프리셋 1개 + 상단 배너', '지하층·침수 가중치 × 1.5일 뿐이라 AnalysisCriteriaTO에 scenario 값만 더하면 돼요. 가장 먼저 붙이기 쉬워요.'],
+  ['기준 가이드 챗봇 (02-3)', 'GuideRESTController, GuideService, guide-docs.txt, map-guide.js', 'LLM API 키와 근거 문서가 필요해요. 자주 묻는 기준 3개는 고정 답변으로 먼저 보여 줄 수 있어요.'],
+  ['건물 확인 이력 (05)', 'HistoryController, HistoryService, HistoryDAO, mapper-history.xml, CheckHistoryTO, history.jsp', '앱에서 올린 사진·현장 체크·부서 이관 기록이 있어야 채워져요. 테이블 building_check 하나 추가.'],
+  ['요인별 정확도 · 분석 적중률 · 점수 보정 (06)', 'mapper-dashboard #getFactorAccuracy, FactorAccuracyTO', '현장에서 "요인 맞음/아님"을 기록한 데이터가 있어야 숫자가 나와요.'],
+  ['LLM 요약 리포트 · PDF 내보내기 (06)', 'ReportSummaryService, 브라우저 인쇄용 CSS', '요약은 LLM, PDF는 인쇄 CSS로 대신할 수 있어요.'],
+  ['주소 목록 다운로드 .xls (04)', 'ArchiveController.excel() + Apache POI', '라이브러리 1개 추가. CSV로 먼저 내려도 행복e음 조회에는 충분해요.'],
+  ['현장 확인 앱으로 보내기 (03-2)', 'FieldController.send()', '앱을 만들지 않으니 버튼과 완료 토스트만.'],
+  ['실제 도로 경로·소요시간 (03-2)', 'RouteService + 네이버 Directions API 키', '중간점검에서는 직선거리 × 평균 속도로 계산해요.'],
+  ['침수흔적 · 저지대 반투명 레이어 (02)', 'api/map/layers.do + 경계 GeoJSON', '면 데이터(폴리곤)가 따로 필요해요.'],
+  ['비밀번호 5회 오류 잠금 (01)', 'member.fail_cnt 컬럼, MemberService에 카운트', '로그인 줄 안에서 끝나서 나중에 붙이기 쉬워요.']
+];
+
+const SCR_NAME = {all:'공통', login:'로그인', map:'메인(지도)', field:'현장확인', archive:'보관함', dash:'대시보드'};
+const LNAME = {C:'Controller',S:'Service',D:'DAO',M:'mapper',T:'TO',V:'View',X:'설정'};
+
+const tabs = document.getElementById('screenTabs'), box = document.getElementById('screenBox');
+let cur = 'map';
+try { const saved = localStorage.getItem('jusawi-screen'); if (saved && SCREENS.some(s=>s.id===saved)) cur = saved; } catch(e) {}
+function renderScreen(){
+  tabs.innerHTML = SCREENS.map(s=>`<button class="tab" type="button" id="tab-${s.id}" data-id="${s.id}" aria-pressed="${s.id===cur}">${s.name}</button>`).join('');
+  const s = SCREENS.find(x=>x.id===cur);
+  box.innerHTML = `<div class="screen"><div class="screen-head"><h3>${s.name} <span class="figref">${s.fig}</span></h3><p>${s.desc}</p></div>
+    <div class="tree-scroll"><ul class="tree">${s.branches.map(b=>`<li class="branch">
+      <div><span class="req"><span class="m">${b.m}</span>${b.u}</span><span class="req-why">${b.why}</span></div>
+      <div class="chain">${b.chain.map(([l,t],i)=>`${i?'<span class="arr">→</span>':''}<span class="L ${l}"><b>${l==='X'?'·':l}</b>${t}</span>`).join('')}</div>
+    </li>`).join('')}</ul></div></div>`;
+}
+tabs.addEventListener('click', e=>{ const b=e.target.closest('.tab'); if(!b) return; cur=b.dataset.id; try{localStorage.setItem('jusawi-screen',cur)}catch(e){} renderScreen(); });
+renderScreen();
+
+document.getElementById('scenBox').innerHTML = SCENARIOS.map(s=>`<div class="card"><h3>${s.t}</h3><ol>${s.steps.map(x=>`<li>${x}</li>`).join('')}</ol></div>`).join('');
+document.getElementById('optBody').innerHTML = OPT.map(([a,b,c])=>`<tr><td>${a}</td><td class="mono" style="font-size:12.5px">${b}</td><td class="muted">${c}</td></tr>`).join('');
+
+const fb = document.getElementById('fileBody'), ff = document.getElementById('fileFilters'), fc = document.getElementById('fileCount');
+let filt = 'every';
+const FILTERS = [['every','전체'],['login','로그인'],['map','메인(지도)'],['field','현장확인'],['archive','보관함'],['dash','대시보드']];
+function renderFiles(){
+  ff.innerHTML = FILTERS.map(([k,n])=>`<button class="chip" type="button" id="f-${k}" data-k="${k}" aria-pressed="${k===filt}">${n}</button>`).join('');
+  let count=0, pending=null; const rows=[];
+  FILES.forEach(x=>{
+    if(x.dir!==undefined){ pending=x; return; }
+    const show = filt==='every' || x.s.includes(filt) || x.s.includes('all');
+    if(!show) return;
+    if(pending){ rows.push(`<tr class="dir"><td colspan="4"><b>${pending.dir}/</b>${pending.note?`<span style="margin-left:10px">${pending.note}</span>`:''}</td></tr>`); pending=null; }
+    count++;
+    rows.push(`<tr><td class="path"><span class="ind">└ </span>${x.f}</td><td><span class="L ${x.L}">${LNAME[x.L]}</span></td><td class="role">${x.r}</td><td>${x.s.map(k=>`<span class="scr">${SCR_NAME[k]}</span>`).join('')}</td></tr>`);
+  });
+  fb.innerHTML = rows.join('');
+  const all = FILES.filter(x=>x.f);
+  const n = re => all.filter(x=>re.test(x.f)).length;
+  fc.textContent = filt==='every'
+    ? `파일 ${all.length}개 (Java ${n(/\.java$/)}개, mapper ${n(/^mapper-/)}개, JSP ${n(/\.jspf?$/)}개, CSS ${n(/\.css$/)}개, JS ${n(/\.js$/)}개, 설정 ${n(/\.(xml|properties|sql)$/)-n(/^mapper-/)}개)`
+    : `${SCR_NAME[filt]}에 필요한 파일 ${count}개 (공통 파일 포함)`;
+}
+ff.addEventListener('click', e=>{ const b=e.target.closest('.chip'); if(!b) return; filt=b.dataset.k; renderFiles(); });
+renderFiles();
+</script>

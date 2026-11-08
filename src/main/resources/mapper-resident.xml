@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mapper-resident">
+
+	<!-- ================================================================
+	     거주자 데이터는 여기서만 읽는다.
+	     DB 는 정규화되어 있음 : residency(건물·층·동·호 ↔ 가구) · household(가구) · person(가구원) · arrears(건보료 체납)
+	     한 가구 = residency 1행 = household 1행 (hh_id). 카드의 residentId = hh_id
+	     ================================================================ -->
+
+	<!-- 옥탑층 거주자가 있는 건물 (mapper-building 의 점수 계산이 include) -->
+	<sql id="rooftopJoin">LEFT JOIN (SELECT DISTINCT bld_id FROM residency WHERE res_flr = '옥탑층') rt ON rt.bld_id = b.bld_id</sql>
+
+	<!-- 개인 가점 (가구 단위, r = residency, h = household, a = arrears) -->
+	<sql id="priorityExpr">(
+		  (CASE h.risk_grade WHEN '고위험고립' THEN 30 WHEN '사회적고립' THEN 15 ELSE 0 END)
+		+ (CASE WHEN x.old75_cnt   > 0 THEN 15 ELSE 0 END)
+		+ (CASE WHEN x.severe_cnt  > 0 THEN 15 ELSE 0 END)
+		+ (CASE WHEN h.basic_living_yn = 'Y' OR h.near_poor_yn = 'Y' THEN 10 ELSE 0 END)
+		+ (CASE WHEN x.pension_cnt > 0 THEN 5  ELSE 0 END)
+		+ (CASE WHEN a.nhis_arrears_yn = 'Y' THEN 10 ELSE 0 END)
+		+ (CASE WHEN h.care_burden_yn = 'Y' THEN 10 ELSE 0 END)
+		+ (CASE WHEN r.res_flr LIKE '지하%' OR r.res_flr = '옥탑층' THEN 10 ELSE 0 END)
+	)</sql>
+
+	<!-- 건물의 가구 목록 (집계·카드 공용) -->
+	<sql id="householdSelect">
+		SELECT r.hh_id            resident_id
+		     , r.res_flr
+		     , r.dong_nm
+		     , r.ho_nm
+		     , h.hh_mbr_cnt
+		     , h.hh_type
+		     , h.risk_grade
+		     , hd.mbr_nm          head_nm
+		     , hd.birth_day
+		     , x.max_age
+		     , x.old75_cnt
+		     , x.severe_cnt
+		     , x.pension_cnt
+		     , h.near_poor_yn
+		     , h.basic_living_yn
+		     , h.care_burden_yn
+		     , IFNULL(a.nhis_arrears_yn, 'N') arrears_yn
+		     , <include refid="mapper-resident.priorityExpr"/> priority
+		  FROM residency r
+		  JOIN household h ON h.hh_id = r.hh_id
+		  JOIN (SELECT p.hh_id
+		             , MAX(p.age) max_age
+		             , COUNT(CASE WHEN p.age >= 75 THEN 1 END) old75_cnt
+		             , COUNT(CASE WHEN p.dsbl_grade_nm = '심한 장애' THEN 1 END) severe_cnt
+		             , COUNT(CASE WHEN p.basic_pension_yn = 'Y' THEN 1 END) pension_cnt
+		          FROM person p
+		          JOIN residency r2 ON r2.hh_id = p.hh_id AND r2.bld_id = #{bldId}
+		         GROUP BY p.hh_id) x ON x.hh_id = r.hh_id
+		  LEFT JOIN person hd ON hd.hh_id = r.hh_id AND hd.head_rel = '본인'
+		  LEFT JOIN arrears a ON a.residency_id = r.residency_id AND a.arrears_type = 'HEALTH_INS'
+		 WHERE r.bld_id = #{bldId}
+	</sql>
+
+	<!-- 건물별 집계 (지도·리스트·상세에 노출되는 건 이것뿐) -->
+	<select id="getResidentCount" parameterType="String" resultType="wellfair.to.ResidentCountTO">
+		SELECT COUNT(*)                                            hh_cnt
+		     , IFNULL(SUM(y.hh_mbr_cnt), 0)                        mbr_cnt
+		     , IFNULL(SUM(y.risk_grade = '고위험고립'), 0)         high_risk_hh
+		     , IFNULL(SUM(y.risk_grade = '사회적고립'), 0)         social_iso_hh
+		     , IFNULL(SUM(y.old75_cnt), 0)                         old75
+		     , IFNULL(SUM(y.severe_cnt), 0)                        severe_dsbl
+		     , IFNULL(SUM(y.basic_living_yn = 'Y' OR y.near_poor_yn = 'Y'), 0) near_poor_hh
+		     , IFNULL(SUM(y.pension_cnt), 0)                       pension_cnt
+		     , IFNULL(SUM(y.arrears_yn = 'Y'), 0)                  arrears_hh
+		     , IFNULL(SUM(y.care_burden_yn = 'Y'), 0)              care_burden_hh
+		     , IFNULL(SUM(y.res_flr LIKE '지하%'), 0)              ugrnd_hh
+		     , IFNULL(SUM(y.res_flr = '옥탑층'), 0)                rooftop_hh
+		     , IFNULL(MAX(y.priority), 0)                          max_priority
+		     , IFNULL(SUM(y.priority > 0), 0)                      vuln_hh
+		  FROM (<include refid="mapper-resident.householdSelect"/>) y
+	</select>
+
+	<!-- 거주 가구 탭 : 세대 카드 (가림 처리는 ResidentService) -->
+	<select id="getResidentList" parameterType="String" resultType="wellfair.to.ResidentTO">
+		SELECT y.*
+		  FROM (<include refid="mapper-resident.householdSelect"/>) y
+		 ORDER BY y.priority DESC, y.res_flr, y.resident_id
+	</select>
+
+	<!-- 정보 확인하기 : 동·호수만 -->
+	<select id="getResident" parameterType="long" resultType="wellfair.to.ResidentTO">
+		SELECT r.hh_id resident_id, r.res_flr, r.dong_nm, r.ho_nm
+		  FROM residency r
+		 WHERE r.hh_id = #{residentId}
+	</select>
+
+</mapper>
