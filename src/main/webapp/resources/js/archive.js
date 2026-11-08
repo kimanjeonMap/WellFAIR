@@ -10,6 +10,15 @@ $(function () {
   $('#selDong').on('change', function () { $('#selAdm').val(''); $('#filterForm').trigger('submit'); });
   $('#selAdm').on('change', function () { $('#filterForm').trigger('submit'); });
 
+  /* 검색창 [×] : 글자가 있을 때만 보이고, 누르면 지운다. 이미 검색한 상태였으면 전체 목록으로 다시 조회 */
+  var searched = $.trim($('#archiveQ').val()) !== '';
+  $('#archiveQ').on('input', function () { $('#archiveQClear').prop('hidden', this.value === ''); });
+  $('#archiveQClear').on('click', function () {
+    $('#archiveQ').val('').trigger('focus');
+    $(this).prop('hidden', true);
+    if (searched) $('#filterForm').trigger('submit');
+  });
+
   /* [상세 필터] 펼치기 · 접기 (펼침 상태는 fopen 으로 같이 보낸다) */
   $('#btnFilter').on('click', function () {
     var open = !$('#filterDetail').is(':visible');

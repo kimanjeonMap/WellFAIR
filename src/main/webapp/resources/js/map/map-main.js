@@ -4,7 +4,7 @@
  *  - zoom_changed → 모드·범례 갱신, idle → 200ms 디바운스 후 loadPoints()
  *  - 요청 bbox = 화면 범위 + 여유, 요청 순번(pointSeq)으로 늦게 온 옛 응답은 버린다
  *  - 분석 전 : 현장 확인됨 핀 + 구 경계(기본 기준). "분석 실행" 후 : 기준값으로 다시 조회 + 결과 리스트
- *  - 동 선택 2단계(법정동 → 행정동, api/map/dongs.do) · 결과 리스트 범위(구 전체 / 동 / "지도 화면 안") · [이 지역에서 재검색] (5-1)
+ *  - 동 선택 2단계(법정동 → 행정동 여러 개, api/map/dongs.do) · 결과 리스트 범위(구 전체 / 동 / "지도 화면 안") · [이 지역에서 재검색] (5-1)
  *  - 구청 계정 (11단계) : 소속 구 밖은 어두운 가림막(구멍 뚫린 다각형) + 경계선, 관할 밖으로 나가면 안내 띠, 이동 범위 = 구 bbox + 2km, 최소 줌 12
  */
 $(function () {
@@ -22,7 +22,7 @@ $(function () {
   var state = {
     analyzed: false,     // "분석 실행" 을 눌렀는지
     criteria: null,      // 확정된 조건 = 마지막으로 [분석 실행]한 값 (시작 때 패널 기본값을 한 번 찍어 둔다). 슬라이더만 움직인 값은 쓰지 않는다
-    gu: window.LOCK_GU || '', dong: '', adm: '', q: '',   // 구청 계정이면 소속 구로 고정 (selGu 는 disabled). dong = 법정동, adm = 행정동
+    gu: window.LOCK_GU || '', dong: '', adms: [], q: '',  // 구청 계정이면 소속 구로 고정 (selGu 는 disabled). dong = 법정동 하나 전체, adms = 고른 행정동들 "법정동|행정동" (복수 선택)
     bbox: null,              // [이 지역에서 재검색] 뒤의 리스트 범위 ("지도 화면 안"). 동을 다시 고르면 null
     quietUntil: 0,           // 프로그램이 지도를 옮기는 동안(flyTo · fitTo)은 [재검색] 버튼을 띄우지 않는다
     selectedId: null,
@@ -71,14 +71,14 @@ $(function () {
   function listParams() {
     var p = $.extend({}, criteria(), { q: state.q });
     if (state.bbox) p.bbox = state.bbox;
-    else { p.gu = state.gu; p.dong = state.dong; p.adm = state.adm; }
+    else { p.gu = state.gu; p.dong = state.dong; p.adms = state.adms; }
     return p;
   }
   /* 리스트 머리 : "구로구 · 구로동 · 구로2동" / "지도 화면 안" */
   function renderScope() {
     var g = guOf(state.gu);
     $('#resultScope').text(state.bbox ? '지도 화면 안'
-      : [g ? g.name : '전체 3개 구', state.dong, state.adm].filter(Boolean).join(' · '));
+      : [g ? g.name : '전체 3개 구', state.dong].concat(state.adms.map(admOfKey)).filter(Boolean).join(' · '));
   }
   /* 지도를 옮겨도 리스트는 그대로 (5-1). 분석 뒤 사용자가 옮겼을 때만 [이 지역에서 재검색] 을 띄운다 */
   function onMoved() {
@@ -192,7 +192,7 @@ $(function () {
   $('#btnBackGu').on('click', function () { if (lock.bbox) fitTo(lock.bbox); });
   /* 현장 확인된 건물 목록. 핀 모드에서 핀이 없는 건물만 파란 체크 점으로 그려진다 (MapMarker 가 판단) */
   function loadChecked() {
-    MapApi.checked({ gu: state.gu, dong: state.dong, adm: state.adm, checkedMonths: state.checkedMonths }).done(function (list) { MapMarker.renderChecked(list); });
+    MapApi.checked({ gu: state.gu, dong: state.dong, adms: state.adms, checkedMonths: state.checkedMonths }).done(function (list) { MapMarker.renderChecked(list); });
   }
   /* 범례 "현장 확인됨" 기간 바꾸기 → 구 요약 · 묶음/핀 · 체크 점 다시 */
   var CHECK_LABEL = { 3: '최근 3개월', 12: '최근 1년', 0: '전체', '-1': '끄기' };
@@ -289,58 +289,122 @@ $(function () {
   /* ---------- 상단 : 구 · 동(법정동 → 행정동 2단계) · 검색 · 칩 ---------- */
   var esc = Common.esc;
   var DONGS = [];   // api/map/dongs.do : [{sggCd, emdNm, cnt, bbox, adms:[{admNm, cnt, bbox}]}]
-  function loadDongs() {
-    MapApi.dongs({ gu: state.gu }).done(function (list) { DONGS = list; renderDongMenu(); });
+  /* reopenEmd : 구가 바뀌어 목록을 다시 받은 뒤에도 그 법정동의 행정동 열을 열어 둔다 (복수 선택 중) */
+  function loadDongs(reopenEmd) {
+    MapApi.dongs({ gu: state.gu }).done(function (list) {
+      DONGS = list; renderDongMenu();
+      if (reopenEmd) { var $r = $('#dmEmd .dm-row').filter(function () { return $(this).attr('data-emd') === reopenEmd; }); if ($r.length) showAdm($r); }
+    });
   }
   function dongOf(sggCd, emdNm) { return DONGS.filter(function (x) { return x.emdNm === emdNm && x.sggCd === sggCd; })[0]; }
-  function dongLabel() { return state.dong ? state.dong + (state.adm ? ' · ' + state.adm : '') : '전체 동'; }
+  /* 행정동 키 = "법정동|행정동" (같은 이름의 행정동이 다른 법정동에 걸쳐도 구분) */
+  function admKey(emd, adm) { return emd + '|' + adm; }
+  function admOfKey(k) { return k.split('|')[1]; }
+  function emdOfKey(k) { return k.split('|')[0]; }
+  /* 버튼 글자 : 전체 동 / 구로동 / 구로동 · 구로2동 / 구로2동 외 2 */
+  function dongLabel() {
+    var n = state.adms.length;
+    if (n === 1) return emdOfKey(state.adms[0]) + ' · ' + admOfKey(state.adms[0]);
+    if (n > 1) return admOfKey(state.adms[0]) + ' 외 ' + (n - 1);
+    return state.dong || '전체 동';
+  }
+  function emdHasSel(d) {
+    if (d.sggCd !== state.gu) return false;
+    if (d.emdNm === state.dong) return true;
+    return state.adms.some(function (k) { return emdOfKey(k) === d.emdNm; });
+  }
   function renderDongMenu() {
     var $e = $('#dmEmd').empty();
-    $e.append('<div class="dm-row dm-all' + (!state.dong ? ' sel' : '') + '" data-sgg="" data-emd="">전체 동</div>');
+    $e.append('<div class="dm-row dm-all' + (!state.dong && !state.adms.length ? ' sel' : '') + '" data-sgg="" data-emd="">전체 동</div>');
     DONGS.forEach(function (d) {
       var g = guOf(d.sggCd);
-      $e.append('<div class="dm-row' + (d.sggCd === state.gu && d.emdNm === state.dong ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '">'
+      $e.append('<div class="dm-row' + (emdHasSel(d) ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '">'
         + '<span>' + esc(d.emdNm) + (!state.gu && g ? ' <small>' + esc(g.name) + '</small>' : '') + '</span>' + (d.adms.length ? '<i>›</i>' : '') + '</div>');
     });
     $('#dmAdm').hide();
     $('#dongBtn span').text(dongLabel());
   }
-  /* 법정동 줄에 올리면 오른쪽에 그 행정동 목록. data-sgg 는 .data() 가 숫자로 바꾸므로 attr 로 읽는다 */
+  /* 법정동 줄에 올리면 오른쪽에 그 행정동 목록 (여러 개 고를 수 있음). data-sgg 는 .data() 가 숫자로 바꾸므로 attr 로 읽는다 */
   function showAdm($row) {
     var d = dongOf($row.attr('data-sgg'), $row.attr('data-emd')), $a = $('#dmAdm').empty();
     $('#dmEmd .dm-row').removeClass('hover'); $row.addClass('hover');
     if (!d || !d.adms.length) { $a.hide(); return; }
-    var whole = d.sggCd === state.gu && d.emdNm === state.dong;
-    $a.append('<div class="dm-row dm-all' + (whole && !state.adm ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '" data-adm="">' + esc(d.emdNm) + ' 전체 <small>' + Common.num(d.cnt) + '</small></div>');
+    var sameGu = d.sggCd === state.gu, whole = sameGu && d.emdNm === state.dong && !state.adms.length;
+    $a.append('<div class="dm-row dm-all' + (whole ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '" data-adm="">' + esc(d.emdNm) + ' 전체</div>');
     d.adms.forEach(function (a) {
-      $a.append('<div class="dm-row' + (whole && a.admNm === state.adm ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '" data-adm="' + esc(a.admNm) + '"><span>' + esc(a.admNm) + '</span><small>' + Common.num(a.cnt) + '</small></div>');
+      var on = sameGu && state.adms.indexOf(admKey(d.emdNm, a.admNm)) >= 0;
+      $a.append('<div class="dm-row dm-multi' + (on ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '" data-adm="' + esc(a.admNm) + '">'
+        + esc(a.admNm) + '</div>');
     });
     $a.css('top', Math.max(0, $row.position().top)).show();
   }
-  function selectDong(sggCd, emdNm, admNm) {
-    var guChanged = sggCd && sggCd !== state.gu;
-    if (guChanged) { state.gu = sggCd; $('#selGu').val(sggCd); }   // "전체 구" 에서 동을 고르면 그 구로
-    state.dong = emdNm || ''; state.adm = admNm || '';
+  /* 고른 범위로 지도 이동 : 행정동 여러 개면 bbox 를 합친다 */
+  function areaBox() {
+    if (state.adms.length) {
+      var box = null;
+      state.adms.forEach(function (k) {
+        var d = dongOf(state.gu, emdOfKey(k)), a = d && d.adms.filter(function (x) { return x.admNm === admOfKey(k); })[0];
+        var b = a ? a.bbox : null;
+        if (!b) return;
+        box = box ? [Math.min(box[0], b[0]), Math.min(box[1], b[1]), Math.max(box[2], b[2]), Math.max(box[3], b[3])] : b.slice();
+      });
+      return box;
+    }
+    var d = dongOf(state.gu, state.dong);
+    return d ? d.bbox : null;
+  }
+  /* 범위가 바뀐 뒤 공통 : 지도 이동 · 메뉴 · 리스트 머리 · 현장 확인 · 결과 */
+  function applyArea(guChanged, reopenEmd) {
     state.bbox = null;                                             // 동을 다시 고르면 재검색 범위는 풀린다
     $('#btnRefetch').removeClass('show');
-    $('#dongDd').removeClass('open');
-    var d = dongOf(state.gu, state.dong);
-    var box = d ? (state.adm ? (d.adms.filter(function (a) { return a.admNm === state.adm; })[0] || d).bbox : d.bbox) : null;
+    var box = areaBox();
     if (box) fitTo(box);
     else { var g = guOf(state.gu); flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.GU : C.ZOOM.INIT); }
-    if (guChanged) loadDongs(); else renderDongMenu();
+    if (guChanged) loadDongs(reopenEmd); else $('#dongBtn span').text(dongLabel());
     renderScope();
     loadChecked();
     if (state.analyzed) MapResult.load(true);
   }
+  function setGu(sggCd) {
+    var changed = sggCd && sggCd !== state.gu;
+    if (changed) { state.gu = sggCd; $('#selGu').val(sggCd); state.adms = []; }   // "전체 구" 에서 동을 고르면 그 구로
+    return changed;
+  }
+  /* 법정동 하나 전체 (또는 전체 동) : 메뉴를 닫는다 */
+  function selectDong(sggCd, emdNm) {
+    var guChanged = setGu(sggCd);
+    state.dong = emdNm || ''; state.adms = [];
+    $('#dongDd').removeClass('open');
+    if (!guChanged) renderDongMenu();
+    applyArea(guChanged);
+  }
+  /* 행정동 하나 켜고 끄기 : 메뉴는 열어 둔 채로 여러 개 고른다 */
+  function toggleAdm($row) {
+    var guChanged = setGu($row.attr('data-sgg'));
+    var k = admKey($row.attr('data-emd'), $row.attr('data-adm')), i = state.adms.indexOf(k);
+    if (i >= 0) state.adms.splice(i, 1); else state.adms.push(k);
+    state.dong = '';
+    if (guChanged) { applyArea(true, $row.attr('data-emd')); return; }
+    $row.toggleClass('sel', i < 0);
+    $('#dmAdm .dm-all').removeClass('sel');
+    $('#dmEmd .dm-row').each(function () {
+      var $r = $(this), d = dongOf($r.attr('data-sgg'), $r.attr('data-emd'));
+      $r.toggleClass('sel', d ? emdHasSel(d) : !state.adms.length);
+    });
+    applyArea(false);
+  }
   $('#dongBtn').on('click', function (e) { e.stopPropagation(); $('#dongDd').toggleClass('open'); if ($('#dongDd').hasClass('open')) $('#dmAdm').hide(); });
   $('#dmEmd').on('mouseenter', '.dm-row', function () { showAdm($(this)); });
-  $('#dmEmd').on('click', '.dm-row', function () { var $r = $(this); selectDong($r.attr('data-sgg'), $r.attr('data-emd'), ''); });
-  $('#dmAdm').on('click', '.dm-row', function () { var $r = $(this); selectDong($r.attr('data-sgg'), $r.attr('data-emd'), $r.attr('data-adm')); });
+  $('#dmEmd').on('click', '.dm-row', function () { var $r = $(this); selectDong($r.attr('data-sgg'), $r.attr('data-emd')); });
+  $('#dmAdm').on('click', '.dm-row', function (e) {
+    e.stopPropagation();
+    var $r = $(this);
+    if ($r.attr('data-adm')) toggleAdm($r); else selectDong($r.attr('data-sgg'), $r.attr('data-emd'));
+  });
   $(document).on('click', function (e) { if (!$(e.target).closest('#dongDd').length) $('#dongDd').removeClass('open'); });
 
   $('#selGu').on('change', function () {
-    state.gu = this.value; state.dong = ''; state.adm = ''; state.bbox = null;
+    state.gu = this.value; state.dong = ''; state.adms = []; state.bbox = null;
     $('#btnRefetch').removeClass('show');
     loadDongs();
     var g = guOf(state.gu);
@@ -356,6 +420,13 @@ $(function () {
   }
   $('#btnSearch').on('click', search);
   $('#searchQ').on('keydown', function (e) { if (e.key === 'Enter') search(); });
+  /* 검색창 [×] : 지우고, 검색한 상태였으면 검색어 없이 다시 */
+  $('#searchQ').on('input', function () { $('#searchClear').prop('hidden', this.value === ''); });
+  $('#searchClear').on('click', function () {
+    $('#searchQ').val('').trigger('focus');
+    $(this).prop('hidden', true);
+    if (state.q) { state.q = ''; if (state.analyzed) MapResult.load(true); }
+  });
 
   function setChips() { /* 상단 칩은 없앴다 (대시보드로) */ }
 

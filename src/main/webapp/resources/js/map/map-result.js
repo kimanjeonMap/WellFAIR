@@ -10,12 +10,11 @@ window.MapResult = (function () {
 
   function row(b) {
     var title = (b.bldNm ? Common.shortAddr(b.addr) + ' ' + b.bldNm : Common.shortAddr(b.addr) + (b.useNm ? ' ' + b.useNm : ''));
-    var lv = MapMarker.levelOf(b.score);
     return '<div class="rs-row" data-id="' + esc(b.bldId) + '" data-lat="' + b.lat + '" data-lng="' + b.lng + '">'
       + '<span class="rs-rank">' + b.rank + '</span>'
       + '<div class="rs-body"><div class="rs-title">' + esc(title) + '</div>'
       + '<div class="rs-sub">' + esc(b.factorText || '해당 요인 없음') + (b.vulnHhCnt ? '<small class="rs-hh">취약 가구 ' + b.vulnHhCnt + '</small>' : '') + '</div></div>'
-      + '<div class="rs-score"><b>' + b.score + '</b><i style="width:' + b.score + '%;background:' + MAP_CONFIG.COLORS[lv.key] + '"></i></div>'
+      + '<div class="rs-score"><b>' + b.score + '</b><span class="rs-track"><i style="width:' + Math.min(100, b.score) + '%"></i></span></div>'
       + '</div>';
   }
 

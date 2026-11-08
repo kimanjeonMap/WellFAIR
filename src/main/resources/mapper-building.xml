@@ -40,11 +40,16 @@
 
 	<!-- 옥탑 거주 건물 = bld_resident_stat.rooftop_hh_cnt > 0 (04 에서 한 번 계산. residency 를 매번 훑지 않는다) -->
 	<sql id="statJoin">LEFT JOIN bld_resident_stat rs ON rs.bld_id = b.bld_id</sql>
-	<!-- 지역 조건 (gu = sgg_cd, dong = emd_nm) -->
+	<!-- 지역 조건 (gu = sgg_cd, dong = emd_nm, adm = adm_nm, adms = "법정동|행정동" 여러 개) -->
 	<sql id="areaWhere">
 		<if test="gu != null and gu != ''">AND b.sgg_cd = #{gu}</if>
 		<if test="dong != null and dong != ''">AND b.emd_nm = #{dong}</if>
 		<if test="adm != null and adm != ''">AND b.adm_nm = #{adm}</if>
+		<!-- 행정동 여러 개 (지도 동 선택에서 복수 선택) : "법정동|행정동" 키 목록 -->
+		<if test="adms != null and adms.size() > 0">
+			AND CONCAT(b.emd_nm, '|', b.adm_nm) IN
+			<foreach collection="adms" item="k" open="(" separator="," close=")">#{k}</foreach>
+		</if>
 	</sql>
 
 	<!-- 점수가 붙은 건물 한 줄 (내부 조회용). 바깥 쿼리에서 t.score 로 거른다 -->

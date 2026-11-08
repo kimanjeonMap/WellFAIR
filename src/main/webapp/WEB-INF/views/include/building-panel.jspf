@@ -12,7 +12,6 @@
 <div class="d-title-wrap">
   <h3 id="dTitle"></h3>
   <div class="d-sub"><span id="dAddr"></span><span class="d-checked" id="dChecked" style="display:none"></span></div>
-  <div class="d-score">취약 점수 <b id="dScore"></b></div>
 </div>
 
 <div class="d-body">
@@ -21,6 +20,10 @@
 
   <h4>건물 정보 (건축물대장)</h4>
   <table class="d-info"><tbody id="dInfo"></tbody></table>
+
+  <%-- 복지 사각 : 가장 가까운 복지시설 · 병원 · 정류장까지 거리 (건축물대장 자료가 아니라 따로 뺐다) --%>
+  <h4>복지 사각</h4>
+  <div class="welf-box" id="dWelf"></div>
 
   <%-- 거주 취약 가구 (02-2) : 집계만. 개인 정보는 모달에서 --%>
   <h4>거주 취약 가구</h4>

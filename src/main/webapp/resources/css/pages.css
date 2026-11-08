@@ -35,6 +35,10 @@
 .search-wrap { position: relative; }
 .search-wrap .field { width: 280px; padding-right: 34px; }
 .search-wrap button { position: absolute; right: 2px; top: 2px; width: 32px; height: 32px; border: 0; background: none; color: var(--text-2); font-size: 16px; cursor: pointer; }
+/* 검색어 지우기 [×] : 돋보기 왼쪽 */
+.search-wrap .field { padding-right: 62px; }
+.search-wrap .search-clear { right: 32px; width: 28px; font-size: 18px; line-height: 1; }
+.search-wrap .search-clear:hover, .search-wrap button:hover { color: var(--text); }
 
 /* 표 */
 .tbl { width: 100%; border-collapse: collapse; background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }

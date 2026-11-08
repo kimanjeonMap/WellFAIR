@@ -28,9 +28,9 @@ import wellfair.to.ResidentTO;
  *  api/map/clusters.do   격자 묶음 (zoom 15~17)                   ?bbox=minLng,minLat,maxLng,maxLat&cell=&기준값
  *  api/map/buildings.do  건물 핀 (zoom 18 이상)                    ?bbox=&limit=1500&기준값
  *  api/map/dongs.do      동 선택 2단계 (법정동 → 행정동)             ?gu
- *  api/map/results.do    오른쪽 결과 리스트                        ?sort&page&q&gu&dong&adm (또는 &bbox) &기준값
+ *  api/map/results.do    오른쪽 결과 리스트                        ?sort&page&q&gu&dong&adm&adms (또는 &bbox) &기준값
  *  api/map/building.do   건물 상세                                ?bldId&기준값
- *  api/map/checked.do    분석 전 현장 확인됨 핀                     ?gu&dong
+ *  api/map/checked.do    분석 전 현장 확인됨 핀                     ?gu&dong&adms
  *  api/map/residents.do  거주 가구 탭                              ?bldId
  *  api/map/resident.do   정보 확인하기(동·호수)                     ?residentId
  */

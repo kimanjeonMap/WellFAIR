@@ -62,7 +62,8 @@
       <button type="button" data-sort="recent" class="${criteria.sort == 'recent' ? 'on' : ''}">최근 확인 순</button>
     </div>
     <div class="search-wrap">
-      <input class="field" name="q" value="<c:out value='${criteria.q}'/>" placeholder="건물명, 주소 검색">
+      <input class="field" name="q" id="archiveQ" value="<c:out value='${criteria.q}'/>" placeholder="건물명, 주소 검색" autocomplete="off">
+      <button type="button" class="search-clear" id="archiveQClear" title="검색어 지우기" aria-label="검색어 지우기" ${empty criteria.q ? 'hidden' : ''}>×</button>
       <button type="submit" title="검색">⌕</button>
     </div>
 

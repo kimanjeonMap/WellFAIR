@@ -51,15 +51,10 @@ window.MapLayer = (function () {
       sum += w;
       var $r = $('#w-' + g.key).val(w).prop('disabled', lk);
       fill($r);
-      $('#wv-' + g.key).text(w);
+      $('#wv-' + g.key).text(lk ? '꺼짐' : '+' + w);
       $('.wp-row[data-gw="' + g.key + '"]').toggleClass('locked', lk);
-      $('.gw[data-gw="' + g.key + '"]').text(lk ? '꺼짐' : '+' + w).toggleClass('off', lk);
-      /* 요인 옆 숫자 = 그 요인 하나가 주는 점수 : 주거 공간 · 경제 여건은 묶음 전부, 건물 상태 · 침수 위험은 묶음 ÷ 켜진 요인 수 (12.5 → 13) */
-      var onCnt = g.factors.filter(isOn).length, ratio = (g.key === 'bld' || g.key === 'flood');
-      var each = ratio && onCnt ? Math.round(w / onCnt) : w;
-      g.factors.forEach(function (k) { $('[data-factor="' + k + '"] .f-w').text('+' + each); });
+      /* 레이어 패널에는 점수를 보이지 않는다 (피그마 02). 묶음 점수는 이 팝업에서만 */
     });
-    $('#wSum').text(sum).toggleClass('bad', sum !== 100);
   }
 
   /**
@@ -143,12 +138,11 @@ window.MapLayer = (function () {
 
     /* 섹션 접기 */
     $('.layer-panel').on('click', '.sec-head', function (e) {
-      if ($(e.target).closest('.gw').length) return;
       $(this).closest('.sec').toggleClass('collapsed');
     });
 
     /* 가중치 팝업 */
-    $('#btnWeights, .gw').on('click', function () { $('#weightPop').toggleClass('open'); });
+    $('#btnWeights').on('click', function () { $('#weightPop').toggleClass('open'); });
     $('#weightClose').on('click', function () { $('#weightPop').removeClass('open'); });
     $('#weightReset').on('click', function () { resetWeights(); dirty(); });
     C.WEIGHT_GROUPS.forEach(function (g) {

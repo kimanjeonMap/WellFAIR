@@ -14,50 +14,50 @@
   <%-- ================= 왼쪽 : 레이어 패널 (Figma 02) ================= --%>
   <aside class="layer-panel" id="panelLeft">
     <div class="layer-scroll">
-      <%-- 요인은 위험 유형 4묶음 아래로 (5-1 "가중치·분석 실행·도넛"). 켜고 끄기만, 새 요인 추가 없음. 묶음 배지 = 가중치 --%>
+      <%-- 요인은 위험 유형 4묶음 아래로 (5-1 "가중치·분석 실행·도넛"). 켜고 끄기만, 새 요인 추가 없음. 점수(가중치)는 [가중치 조정] 팝업에서만 보인다 (피그마 02) --%>
 
       <section class="sec">
-        <div class="sec-head"><span class="caret"></span>1. 주거 공간 <span class="badge gw" data-gw="space" title="가중치 조정">+45</span></div>
+        <div class="sec-head"><span class="caret"></span>1. 주거 공간</div>
         <div class="sec-body">
           <div class="f-row" data-factor="ugrnd">
             <label class="chk"><input type="checkbox" class="f-chk"> 지하층(반지하)</label>
-            <span class="f-val">지하 거주 등록</span><span class="f-w"></span>
+            <span class="f-val">지하 거주 등록</span>
           </div>
           <div class="f-row" data-factor="rooftop">
             <label class="chk"><input type="checkbox" class="f-chk"> 옥탑</label>
-            <span class="f-val">옥탑층 거주</span><span class="f-w"></span>
+            <span class="f-val">옥탑층 거주</span>
           </div>
           <div class="f-row" data-factor="gosiwon">
             <label class="chk"><input type="checkbox" class="f-chk"> 고시원(다중생활시설)</label>
-            <span class="f-val">대장 유형</span><span class="f-w"></span>
+            <span class="f-val">대장 유형</span>
           </div>
         </div>
       </section>
 
       <section class="sec">
-        <div class="sec-head"><span class="caret"></span>2. 건물 상태 <span class="badge gw" data-gw="bld" title="가중치 조정">+20</span></div>
+        <div class="sec-head"><span class="caret"></span>2. 건물 상태</div>
         <div class="sec-body">
           <div class="f-row has-rng" data-factor="old">
             <label class="chk"><input type="checkbox" class="f-chk"> 노후주택 (준공 30년+)</label>
-            <input type="range" class="f-rng"><span class="f-val"></span><span class="f-w"></span>
+            <input type="range" class="f-rng"><span class="f-val"></span>
           </div>
           <div class="f-row" data-factor="viol">
             <label class="chk"><input type="checkbox" class="f-chk"> 위반건축물</label>
-            <span class="f-val">대장 등재</span><span class="f-w"></span>
+            <span class="f-val">대장 등재</span>
           </div>
         </div>
       </section>
 
       <section class="sec">
-        <div class="sec-head"><span class="caret"></span>3. 침수 위험 <span class="badge gw" data-gw="flood" title="가중치 조정">+25</span></div>
+        <div class="sec-head"><span class="caret"></span>3. 침수 위험</div>
         <div class="sec-body">
           <div class="f-row has-rng" data-factor="flood">
             <label class="chk"><input type="checkbox" class="f-chk"> 침수흔적</label>
-            <input type="range" class="f-rng"><span class="f-val"></span><span class="f-w"></span>
+            <input type="range" class="f-rng"><span class="f-val"></span>
           </div>
           <div class="f-row has-rng" data-factor="low">
             <label class="chk"><input type="checkbox" class="f-chk"> 저지대 (DEM)</label>
-            <input type="range" class="f-rng"><span class="f-val"></span><span class="f-w"></span>
+            <input type="range" class="f-rng"><span class="f-val"></span>
           </div>
           <div class="f-row off ref">
             <label class="chk"><input type="checkbox" disabled> 하천범람 · 참고</label><span class="f-val">연동 예정</span>
@@ -69,11 +69,11 @@
       </section>
 
       <section class="sec">
-        <div class="sec-head"><span class="caret"></span>4. 경제 여건 <span class="badge gw" data-gw="econ" title="가중치 조정">+10</span></div>
+        <div class="sec-head"><span class="caret"></span>4. 경제 여건</div>
         <div class="sec-body">
           <div class="f-row has-rng ref" data-factor="cheap">
             <label class="chk"><input type="checkbox" class="f-chk"> 저가 주택 (공시가격 백분위)</label>
-            <input type="range" class="f-rng"><span class="f-val"></span><span class="f-w"></span>
+            <input type="range" class="f-rng"><span class="f-val"></span>
           </div>
         </div>
       </section>
@@ -99,15 +99,13 @@
       <button type="button" class="btn btn-primary" id="btnRun">▶ 분석 실행</button>
     </div>
 
-    <%-- 가중치 조정 팝업 : 위험 유형 4묶음, 합계 항상 100 (map-layer.js 가 비율대로 맞춘다) --%>
+    <%-- 가중치 조정 팝업 (피그마 02 가중치 조정 열림) : 위험 유형 4묶음, 합계 항상 100 (map-layer.js 가 비율대로 맞춘다) --%>
     <div class="weight-pop" id="weightPop">
-      <div class="wp-head"><b>가중치 조정</b><span class="wp-sum">합계 <b id="wSum">100</b> / 100</span><button type="button" class="link-muted" id="weightReset">초기화</button><button type="button" class="wp-close" id="weightClose">×</button></div>
-      <div class="wp-row" data-gw="space"><div class="wp-name">주거 공간<small>지하층 · 옥탑 · 고시원</small></div><b id="wv-space"></b><input type="range" id="w-space"></div>
-      <div class="wp-row" data-gw="bld"><div class="wp-name">건물 상태<small>노후 · 위반건축물</small></div><b id="wv-bld"></b><input type="range" id="w-bld"></div>
-      <div class="wp-row" data-gw="flood"><div class="wp-name">침수 위험<small>침수 이력 · 저지대</small></div><b id="wv-flood"></b><input type="range" id="w-flood"></div>
-      <div class="wp-row" data-gw="econ"><div class="wp-name">경제 여건<small>저가 주택</small></div><b id="wv-econ"></b><input type="range" id="w-econ"></div>
-      <p class="wp-note">점수 = 해당하는 묶음 가중치의 합 (묶음 안 요인이 하나라도 맞으면 한 번). 요인이 전부 꺼진 묶음은 0 으로 잠깁니다.<br>
-        합계 100점 만점에서 <b>${criteria.scoreMin}점 이상</b>인 건물만 지도와 결과에 표시합니다. 바꾼 값은 [분석 실행]을 눌러야 적용됩니다.</p>
+      <div class="wp-head"><b>가중치 조정</b><button type="button" class="link-muted" id="weightReset">초기화</button><button type="button" class="wp-close" id="weightClose" title="닫기">×</button></div>
+      <div class="wp-row" data-gw="space"><div class="wp-name">주거 공간 <small>지하층 · 옥탑 · 고시원</small></div><b id="wv-space"></b><input type="range" id="w-space"></div>
+      <div class="wp-row" data-gw="bld"><div class="wp-name">건물 상태 <small>노후 · 위반건축물</small></div><b id="wv-bld"></b><input type="range" id="w-bld"></div>
+      <div class="wp-row" data-gw="flood"><div class="wp-name">침수 위험 <small>침수 이력 · 저지대</small></div><b id="wv-flood"></b><input type="range" id="w-flood"></div>
+      <div class="wp-row" data-gw="econ"><div class="wp-name">경제 여건 <small>저가 주택</small></div><b id="wv-econ"></b><input type="range" id="w-econ"></div>
     </div>
   </aside>
 
@@ -142,6 +140,7 @@
 
       <div class="search">
         <input class="field" id="searchQ" placeholder="건물명 · 주소로 검색" autocomplete="off">
+        <button type="button" class="search-clear" id="searchClear" title="검색어 지우기" aria-label="검색어 지우기" hidden>×</button>
         <button type="button" class="search-btn" id="btnSearch" title="검색">⌕</button>
       </div>
     </div>
