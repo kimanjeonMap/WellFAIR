@@ -36,7 +36,7 @@
   left: 0; top: 5px;
   width: 12px; height: 12px;
   border-radius: 50%;
-  background: #4a4a4e;
+  background: var(--line);
 }
 .login-foot { font-size: 13px; color: var(--text-2); }
 

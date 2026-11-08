@@ -1,24 +1,27 @@
 /* WellFAIR 공통 (다크) — Figma "WellFAIR (다크)" 기준
-   화면별 스타일은 login.css / map.css 등 별도 파일 */
+   화면별 스타일은 login.css / map.css 등 별도 파일
+   2026-11-08 설계 화면 값으로 맞춤 (색·모서리·글꼴·체크박스·슬라이더·로고) */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap");
 
 :root {
-  --bg:        #0f0f10;   /* 페이지 바탕 */
-  --bg-panel:  #1a1a1b;   /* 패널·헤더 */
-  --bg-card:   #232325;   /* 카드·입력 */
-  --bg-hover:  #2b2b2e;
-  --line:      #2e2e31;
-  --line-soft: #27272a;
-  --text:      #e8e8ea;
-  --text-2:    #b4b4b8;   /* 보조 글자 */
-  --text-3:    #7c7c82;   /* 흐린 글자 */
-  --primary:   #4a8fe0;   /* 포인트 블루 */
-  --primary-h: #3f7fcc;
+  --bg:        #0b0b0c;   /* 페이지 바탕 */
+  --bg-panel:  #141416;   /* 패널·헤더·카드 */
+  --bg-card:   #1b1b1e;   /* 섹션 제목·입력·안쪽 카드, 지도 바탕 */
+  --bg-hover:  #26272b;
+  --line:      #3a3a40;   /* 테두리 */
+  --line-soft: #26272b;   /* 슬라이더 트랙·표 줄 */
+  --text:      #e2e2e5;
+  --text-2:    #9b9ba2;   /* 보조 글자 */
+  --text-3:    #65656c;   /* 흐린 글자·placeholder */
+  --primary:   #448ede;   /* 메인 컬러 */
+  --primary-h: #3a7cc6;
+  --btn-light: #d4d4d8;   /* 흰색 채움 버튼 (가중치 조정) */
   --danger:    #e5484d;
   --warn:      #f0a030;
   --ok:        #3fb950;
-  --radius:    6px;
-  --header-h:  62px;
-  --font: "Pretendard", -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+  --radius:    2px;       /* 설계는 거의 각진 모서리 */
+  --header-h:  64px;
+  --font: "Noto Sans KR", "Pretendard", -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -37,8 +40,9 @@ h1, h2, h3, h4, p { margin: 0; }
 button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
 
 /* ---------- 브랜드 로고 ---------- */
-.brand-logo { font-weight: 800; letter-spacing: -0.02em; }
-.brand-logo .b1 { color: #ffffff; }
+.brand-logo { font-weight: 700; letter-spacing: -0.02em; }
+.brand-logo .b1 { display: inline-block; color: var(--text); }   /* Well : W 만 메인 컬러 */
+.brand-logo .b1::first-letter { color: var(--primary); }
 .brand-logo .b2 { color: var(--primary); }
 
 /* ---------- 상단 헤더 ---------- */
@@ -52,13 +56,14 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
 }
 .app-header .brand {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-right: 48px;
+  align-items: center;
+  gap: 14px;
+  margin-right: 44px;
   white-space: nowrap;
 }
-.app-header .brand-logo { font-size: 20px; }
+.app-header .brand-logo { font-size: 19px; }
 .app-header .brand-sub { font-size: 12px; color: var(--text-2); }
+.header-right .btn { height: 36px; padding: 0 14px; font-size: 13px; font-weight: 500; border-color: var(--line); }
 
 .gnb { display: flex; height: 100%; }
 .gnb a {
@@ -66,8 +71,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
   align-items: center;
   height: 100%;
   padding: 0 16px;
-  margin: 0 4px;
-  font-size: 15px;
+  margin: 0 2px;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--text-2);
   border-bottom: 2px solid transparent;
 }
@@ -82,9 +88,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 52px;
 }
-.header-right .user-info { font-size: 13px; color: var(--text-2); }
+.header-right .user-info { font-size: 12.5px; color: var(--text-2); }
 
 /* ---------- 버튼 ---------- */
 .btn {
@@ -98,15 +104,17 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
   background: var(--bg-card);
   color: var(--text);
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
 }
 .btn:hover { background: var(--bg-hover); }
+.btn-light { background: var(--btn-light); border-color: var(--btn-light); color: var(--bg-panel); }
+.btn-light:hover { background: #c4c4c9; }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-h); }
 .btn-line { background: transparent; border-color: var(--line); }
 .btn-line:hover { background: var(--bg-hover); }
-.btn-sm { height: 34px; padding: 0 14px; font-size: 13px; }
+.btn-sm { height: 34px; padding: 0 14px; font-size: 13px; font-weight: 500; }
 .btn-block { width: 100%; }
 
 /* ---------- 입력 ---------- */
@@ -122,8 +130,42 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; colo
 .field::placeholder { color: var(--text-3); }
 .field:focus { border-color: var(--primary); }
 label { font-size: 13px; color: var(--text-2); }
-.chk { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.chk input { accent-color: var(--primary); }
+select.field {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 28px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-2) 50%), linear-gradient(135deg, var(--text-2) 50%, transparent 50%);
+  background-position: right 15px center, right 12px center;
+  background-size: 3px 3px, 3px 3px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.chk { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+
+/* 체크박스 : 브라우저 기본 모양 대신 설계 모양 (어두운 테두리 칸 → 메인 컬러 채움 + 흰 체크) */
+input[type=checkbox] {
+  appearance: none; -webkit-appearance: none;
+  flex: 0 0 14px;
+  width: 14px; height: 14px;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+}
+input[type=checkbox]:checked { background: var(--primary); border-color: var(--primary); }
+input[type=checkbox]:checked::after {
+  content: "";
+  width: 4px; height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+input[type=checkbox]:disabled { opacity: .45; cursor: default; }
+
+/* 슬라이더 기본색. 지도 화면 슬라이더 모양은 map.css (.f-rng) */
+input[type=range] { accent-color: var(--primary); }
 .link-muted { color: var(--text-2); }
 .link-muted:hover { color: var(--text); }
 
@@ -143,8 +185,8 @@ label { font-size: 13px; color: var(--text-2); }
 /* 토스트 */
 .toast {
   position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px);
-  padding: 10px 18px; border-radius: 6px;
-  background: #2b2b2e; color: var(--text); font-size: 13px;
+  padding: 10px 18px; border-radius: var(--radius);
+  background: var(--bg-hover); color: var(--text); font-size: 13px;
   border: 1px solid var(--line);
   opacity: 0; pointer-events: none; transition: all .2s; z-index: 100;
 }
