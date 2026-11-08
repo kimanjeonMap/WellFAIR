@@ -50,6 +50,7 @@
     </div>
     <div class="modal-body">
       <div class="rm-notice"><span>🔒 개인정보 열람 기록이 남아요 · <span id="rmViewer"></span></span><span class="muted">업무 목적 외 사용 금지</span></div>
+      <p class="rm-legend muted">취약 유형 = 가구원 전체 요인 · <span class="tag benefit">점선</span> = 수급 확인용(기초생활·차상위·기초연금) · 복지 연계 = 행복e음 지원연계 → 처리결과 원본 값</p>
       <table class="rm-tbl">
         <thead><tr><th>층수</th><th>세대주</th><th>연령대</th><th>가구 구성</th><th>취약 유형</th><th>복지 연계</th></tr></thead>
         <tbody id="rmRows"></tbody>

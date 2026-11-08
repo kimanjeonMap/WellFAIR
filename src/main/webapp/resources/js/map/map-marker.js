@@ -9,8 +9,10 @@ window.MapMarker = (function () {
   var esc = Common.esc;
   var map = null, handlers = {};
   var marks = {};          // key → { key, kind: 'cluster' | 'building', data, el, mk }
+  var riskOnly = true;     // 도넛 가운데 숫자 : 켜져 있으면 기준점 이상 건물 수, 꺼져 있으면 전체 건물 수
   var pinById = {};        // 건물 id → mark
-  var checked = [];        // 현장 확인됨 핀
+  var checked = [];        // 핀 모드에서 핀이 없는 현장 확인 건물의 파란 체크 점 (마커)
+  var checkedList = [];    // api/map/checked.do 응답 (기간 안 현장 확인된 건물)
   var gus = [];            // { polygon, label }
   var guShown = false;
   var selectedId = null;
@@ -74,26 +76,64 @@ window.MapMarker = (function () {
   }
   function drawPin(m) {
     var b = m.data, lv = levelOf(b.score), sel = b.bldId === selectedId;
+    var title = (b.bldNm ? b.bldNm + ' · ' : '') + Common.shortAddr(b.addr) + ' · ' + b.score + '점' + (b.vulnHhCnt ? ' · 취약 가구 ' + b.vulnHhCnt : '') + (b.checked ? ' · 현장 확인됨' : '');
+    /* 점수 순 상위 PIN_ICON_MAX 밖의 건물은 지름 8px 색 점 (아이콘 · 라벨 없음). 눌러도 상세는 열린다. 현장 확인된 점은 파란 테두리 */
+    if (b.dot && !sel) {
+      m.el.className = 'mk-inv kdot' + (b.checked ? ' chk' : '');
+      m.el.style.width = m.el.style.height = '8px';
+      m.el.style.background = C.COLORS[lv.key];
+      m.el.innerHTML = '';
+      putMarker(m, LL(b.lat, b.lng), new naver.maps.Point(4, 4), 60 + lv.rank, title);
+      return;
+    }
     /* 점수 낮은 건물은 작게, 나머지는 크게 → 취약한 건물이 먼저 눈에 들어오도록 */
     var s = sel ? 36 : lv.rank === 1 ? 20 : 28, h = Math.round(s * 32 / 24);
     m.el.className = 'mk-inv kpin' + (sel ? ' sel' : '');
     m.el.style.width = s + 'px';
     m.el.style.height = h + 'px';
     m.el.innerHTML = '<img src="' + svgUri(pointSvg(C.COLORS[lv.key], useGroupOf(b.useNm), sel, s)) + '" width="' + s + '" height="' + h + '" alt="" draggable="false">'
+      + (b.checked ? '<i class="kpin-check" title="현장 확인됨">✓</i>' : '')     /* 9단계 : 따로 핀을 띄우지 않고 그 건물 핀에 파란 체크 배지 */
       + '<span class="kpin-label">' + esc(Common.shortAddr(b.addr)) + '</span>';
-    putMarker(m, LL(b.lat, b.lng), new naver.maps.Point(s / 2, h), sel ? 999 : 100 + lv.rank,
-      (b.bldNm ? b.bldNm + ' · ' : '') + Common.shortAddr(b.addr) + ' · ' + b.score + '점');
+    putMarker(m, LL(b.lat, b.lng), new naver.maps.Point(s / 2, h), sel ? 999 : 100 + lv.rank, title);
   }
-  /* 도넛 묶음 : 가운데 숫자 = 건물 수, 오른쪽 위 빨간 숫자 = 기준점 이상 건물 수 */
+  /* 도넛 묶음 (10단계에서 8단계 이전으로 되돌림) : 가운데 큰 숫자 = 칸 안 전체 건물 수, 오른쪽 위 빨간 배지 = 기준점 이상 건물 수,
+     오른쪽 아래 파란 체크 배지 = 현장 확인된 건물 수 (9단계). 링 색 비율은 그대로 */
   function drawCluster(m) {
     var c = m.data, r = clusterRadius(c.size), S = (r + 2) * 2, k = Math.round(r * 0.8);
     m.el.className = 'mk-inv kcl';
     m.el.style.width = m.el.style.height = S + 'px';
     m.el.innerHTML = '<img src="' + svgUri(clusterSvg(c)) + '" width="' + S + '" height="' + S + '" alt="" draggable="false">'
       + '<b style="font-size:' + (r >= 22 ? 15 : 14) + 'px">' + compact(c.size) + '</b>'
-      + (c.riskCount > 0 ? '<i style="left:' + (S / 2 + k) + 'px;top:' + (S / 2 - k) + 'px">' + compact(c.riskCount) + '</i>' : '');
+      + (c.riskCount > 0 ? '<i style="left:' + (S / 2 + k) + 'px;top:' + (S / 2 - k) + 'px">' + compact(c.riskCount) + '</i>' : '')
+      + (c.checkedCnt > 0 ? '<em style="left:' + (S / 2 + k) + 'px;top:' + (S / 2 + k) + 'px" title="현장 확인 ' + c.checkedCnt + '동">✓' + compact(c.checkedCnt) + '</em>' : '');
     putMarker(m, LL(c.lat, c.lng), new naver.maps.Point(S / 2, S / 2), 10 + Math.min(c.riskCount, 80),
-      '건물 ' + c.size + '동 · ' + C.SCORE_MIN + '점 이상 ' + c.riskCount + '동 · 최고 ' + c.maxScore + '점');
+      '건물 ' + c.size + '동 · ' + C.SCORE_MIN + '점 이상 ' + c.riskCount + '동 · 현장 확인 ' + (c.checkedCnt || 0) + '동 · 최고 ' + c.maxScore + '점');
+  }
+
+  /* 화면 픽셀 거리 MERGE_PX 안의 도넛끼리 하나로 (큰 쪽에 숫자 · 구간을 더하고, 위치는 건물 수 가중 평균). 그리기 직전에 */
+  function mergeClusters(list) {
+    if (noMap() || !list.length) return list;
+    var proj = map.getProjection();
+    var px = function (c) { var p = proj.fromCoordToOffset(LL(c.lat, c.lng)); return [p.x, p.y]; };
+    var kept = [];
+    list.slice().sort(function (a, b) { return b.size - a.size; }).forEach(function (c) {
+      var p = px(c), hit = null;
+      for (var i = 0; i < kept.length && !hit; i++) {
+        var q = kept[i].p, dx = p[0] - q[0], dy = p[1] - q[1];
+        if (dx * dx + dy * dy < C.MERGE_PX * C.MERGE_PX) hit = kept[i];
+      }
+      if (!hit) { kept.push({ p: p, c: $.extend({}, c, { hist: c.hist.slice() }) }); return; }
+      var k = hit.c, tot = k.size + c.size;
+      k.lat = (k.lat * k.size + c.lat * c.size) / tot;
+      k.lng = (k.lng * k.size + c.lng * c.size) / tot;
+      k.size = tot;
+      k.riskCount += c.riskCount;
+      k.checkedCnt = (k.checkedCnt || 0) + (c.checkedCnt || 0);
+      k.maxScore = Math.max(k.maxScore, c.maxScore);
+      for (var j = 0; j < k.hist.length; j++) k.hist[j] += c.hist[j] || 0;
+      hit.p = px(k);
+    });
+    return kept.map(function (k) { return k.c; });
   }
   function addMark(it) {
     var m = $.extend({ el: document.createElement('div'), mk: null }, it);
@@ -117,17 +157,24 @@ window.MapMarker = (function () {
       if (m) m.data = it.data; else addMark(it);
     });
   }
-  var pinItem = function (b) { return { key: 'b|' + b.bldId + '|' + b.score + '|' + (b.useNm || ''), kind: 'building', data: b }; };
-  var clusterItem = function (c) { return { key: 'c|' + c.lng.toFixed(6) + '|' + c.lat.toFixed(6) + '|' + c.size + '|' + c.riskCount + '|' + c.hist.join('.'), kind: 'cluster', data: c }; };
+  var pinItem = function (b, dot) { b.dot = !!dot; return { key: 'b|' + b.bldId + '|' + b.score + '|' + (b.useNm || '') + '|' + (dot ? 'd' : 'p') + (b.checked ? 'c' : ''), kind: 'building', data: b }; };
+  var clusterItem = function (c) { return { key: 'c|' + c.lng.toFixed(6) + '|' + c.lat.toFixed(6) + '|' + c.size + '|' + c.riskCount + '|' + (c.checkedCnt || 0) + '|' + c.hist.join('.'), kind: 'cluster', data: c }; };
 
-  /* 서버 응답 → 지도 (cluster 모드 : 1동짜리 칸은 핀) */
-  function render(mode, list) {
+  /* 서버 응답 → 지도. cluster 모드 : 1동짜리 칸은 핀, 도넛은 70px 안이면 합침 / building 모드 : 점수 순 200개 핀 + 나머지 점 */
+  function render(mode, list, risk) {
+    riskOnly = risk !== false;
     var items;
-    if (mode === 'cluster') items = list.map(function (c) { return c.point ? pinItem(c.point) : clusterItem(c); });
-    else items = list.map(pinItem);
+    if (mode === 'cluster') {
+      var pins = list.filter(function (c) { return c.point; }).map(function (c) { return pinItem(c.point, false); });
+      var donuts = mergeClusters(list.filter(function (c) { return !c.point; })).map(clusterItem);
+      items = pins.concat(donuts);
+    } else {
+      items = list.map(function (b, i) { return pinItem(b, i >= C.PIN_ICON_MAX); });
+    }
     setMarks(items);
+    refreshChecked(mode);
   }
-  function clear() { setMarks([]); }
+  function clear() { setMarks([]); refreshChecked('gu'); }
 
   /* 선택이 바뀐 핀만 다시 그린다 */
   function select(bldId) {
@@ -152,8 +199,9 @@ window.MapMarker = (function () {
       var el = document.createElement('div');
       el.className = 'mk-inv kgu';
       el.style.borderColor = col;
-      el.innerHTML = '<b>' + esc(g.name) + '</b>위험 ' + Common.num(g.riskCount) + '곳';
-      var label = new naver.maps.Marker({ position: LL(g.lat, g.lng), icon: { content: el, anchor: new naver.maps.Point(44, 44) }, zIndex: 5 });
+      el.innerHTML = '<b>' + esc(g.name) + '</b>위험 ' + Common.num(g.riskCount) + '곳'
+        + (g.checkedCnt > 0 ? '<small>현장 확인 ' + Common.num(g.checkedCnt) + '곳</small>' : '');   /* 9단계 : 구 원 안에 한 줄 */
+      var label = new naver.maps.Marker({ position: LL(g.lat, g.lng), icon: { content: el, anchor: new naver.maps.Point(48, 48) }, zIndex: 5 });
       naver.maps.Event.addListener(polygon, 'click', function () { if (handlers.onGuClick) handlers.onGuClick(g); });
       naver.maps.Event.addListener(label, 'click', function () { if (handlers.onGuClick) handlers.onGuClick(g); });
       gus.push({ polygon: polygon, label: label });
@@ -167,16 +215,23 @@ window.MapMarker = (function () {
     gus.forEach(function (g) { g.polygon.setMap(show ? map : null); g.label.setMap(show ? map : null); });
   }
 
-  /* ---------- 현장 확인됨 핀 (파란 ✓) ---------- */
+  /* ---------- 현장 확인됨 (9단계) ----------
+     구 · 묶음 모드 : 개별 표시 없음 (구 라벨 · 도넛 배지가 대신). 핀 모드 : 핀이 있는 건물은 핀의 체크 배지, 핀이 없는 건물만 작은 파란 체크 점 */
   function renderChecked(list) {
+    checkedList = list || [];
+    refreshChecked(handlers.mode ? handlers.mode() : 'gu');
+  }
+  function refreshChecked(mode) {
     if (noMap()) return;
     checked.forEach(function (mk) { mk.setMap(null); });
     checked = [];
-    list.forEach(function (b) {
+    if (mode !== 'building') return;
+    checkedList.forEach(function (b) {
+      if (pinById[b.bldId]) return;                       // 이미 핀(또는 점)이 있는 건물은 그쪽 배지로
       var mk = new naver.maps.Marker({
         position: LL(b.lat, b.lng), map: map,
-        icon: { content: '<div class="mk-inv mk-check">✓</div>', anchor: new naver.maps.Point(14, 14) },
-        zIndex: 50, title: '현장 확인됨 ' + (b.checkedAt || '') + ' · ' + Common.shortAddr(b.addr)
+        icon: { content: '<div class="mk-inv mk-check-dot" title="현장 확인됨">✓</div>', anchor: new naver.maps.Point(8, 8) },
+        zIndex: 55, title: '현장 확인됨 ' + (b.checkedAt || '') + ' · ' + Common.shortAddr(b.addr) + ' (점수 기준 아래)'
       });
       naver.maps.Event.addListener(mk, 'click', function () { if (handlers.onMarkClick) handlers.onMarkClick({ kind: 'building', data: b }); });
       checked.push(mk);

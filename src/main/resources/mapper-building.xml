@@ -5,28 +5,46 @@
 	<!-- ================================================================
 	     취약 점수 SQL 은 여기 한 곳. 파라미터는 AnalysisCriteriaTO.
 	     도넛·마커·결과·상세·대시보드가 scoreExpr 를 include 한다.
-	     (b = building, rt = 옥탑 거주 건물 : mapper-resident.rooftopJoin)
+	     (b = building, rs = bld_resident_stat 건물별 거주자 요약 : 옥탑 판정 rooftop_hh_cnt, 동점 순서 vuln_hh_cnt · priority_sum)
+	     동점 순서 (5-1) : score DESC → vuln_hh_cnt DESC → priority_sum DESC → bld_id. 결과 리스트 · 핀 · 보관함 우선순위 · 현장확인 담기 후보 모두
 	     ================================================================ -->
-	<sql id="ptUgrnd">(CASE WHEN #{ugrndOn} AND b.ugrnd_res = 1 THEN #{ugrndW} ELSE 0 END)</sql>
-	<sql id="ptGosiwon">(CASE WHEN #{gosiwonOn} AND b.sp_type = '고시원' THEN #{gosiwonW} ELSE 0 END)</sql>
-	<sql id="ptRooftop">(CASE WHEN #{rooftopOn} AND rt.bld_id IS NOT NULL THEN #{rooftopW} ELSE 0 END)</sql>
-	<sql id="ptViol">(CASE WHEN #{violOn} AND b.viol_yn = '1' THEN #{violW} ELSE 0 END)</sql>
+	<!-- 요인별 점수 (10단계 규칙)
+	       주거 공간(지하층 · 옥탑 · 고시원) : 맞으면 묶음 가중치 전부 (사는 곳의 종류라 서로 대체 관계 → 묶음은 GREATEST)
+	       건물 상태(노후 · 위반건축물), 침수 위험(침수 · 저지대) : 요인 하나 = 묶음 가중치 ÷ 켜진 요인 수 (둘 다 맞아야 만점, 하나 끄면 남은 하나가 만점)
+	       경제 여건(저가) : 맞으면 전부
+	     꺼진 요인은 0. 켜진 요인 수(bldOnCnt · floodOnCnt)는 boolean 파라미터를 더해서 센다 (true = 1) -->
+	<sql id="bldOnCnt">GREATEST(1, #{oldOn} + #{violOn})</sql>
+	<sql id="floodOnCnt">GREATEST(1, #{floodOn} + #{lowOn})</sql>
+	<sql id="ptUgrnd">(CASE WHEN #{ugrndOn} AND b.ugrnd_res = 1 THEN #{spaceW} ELSE 0 END)</sql>
+	<sql id="ptGosiwon">(CASE WHEN #{gosiwonOn} AND b.sp_type = '고시원' THEN #{spaceW} ELSE 0 END)</sql>
+	<sql id="ptRooftop">(CASE WHEN #{rooftopOn} AND IFNULL(rs.rooftop_hh_cnt, 0) > 0 THEN #{spaceW} ELSE 0 END)</sql>
+	<sql id="ptViol">(CASE WHEN #{violOn} AND b.viol_yn = '1' THEN #{bldW} / <include refid="mapper-building.bldOnCnt"/> ELSE 0 END)</sql>
 	<sql id="ptOld">(CASE WHEN #{oldOn} AND b.useapr_day IS NOT NULL AND LENGTH(b.useapr_day) = 8
-	                      AND YEAR(CURDATE()) - CAST(LEFT(b.useapr_day, 4) AS UNSIGNED) >= #{oldYears} THEN #{oldW} ELSE 0 END)</sql>
-	<sql id="ptFlood">(CASE WHEN #{floodOn} AND b.flood_cnt >= #{floodCnt} THEN #{floodW} ELSE 0 END)</sql>
-	<sql id="ptLow">(CASE WHEN #{lowOn} AND b.elev_m &lt;= #{lowElev} THEN #{lowW} ELSE 0 END)</sql>
-	<sql id="ptCheap">(CASE WHEN #{cheapOn} AND b.price_pct IS NOT NULL AND b.price_pct &lt;= #{cheapPct} THEN #{cheapW} ELSE 0 END)</sql>
+	                      AND YEAR(CURDATE()) - CAST(LEFT(b.useapr_day, 4) AS UNSIGNED) >= #{oldYears} THEN #{bldW} / <include refid="mapper-building.bldOnCnt"/> ELSE 0 END)</sql>
+	<sql id="ptFlood">(CASE WHEN #{floodOn} AND b.flood_cnt >= #{floodCnt} THEN #{floodW} / <include refid="mapper-building.floodOnCnt"/> ELSE 0 END)</sql>
+	<sql id="ptLow">(CASE WHEN #{lowOn} AND b.elev_m &lt;= #{lowElev} THEN #{floodW} / <include refid="mapper-building.floodOnCnt"/> ELSE 0 END)</sql>
+	<sql id="ptCheap">(CASE WHEN #{cheapOn} AND b.price_pct IS NOT NULL AND b.price_pct &lt;= #{cheapPct} THEN #{econW} ELSE 0 END)</sql>
 
-	<!-- 100점 만점 (요인 점수 합, 100 초과는 100) -->
-	<sql id="scoreExpr">LEAST(100,
-		  <include refid="mapper-building.ptUgrnd"/> + <include refid="mapper-building.ptGosiwon"/> + <include refid="mapper-building.ptRooftop"/> + <include refid="mapper-building.ptViol"/>
-		+ <include refid="mapper-building.ptOld"/>   + <include refid="mapper-building.ptFlood"/>   + <include refid="mapper-building.ptLow"/>     + <include refid="mapper-building.ptCheap"/>)</sql>
+	<!-- 현장 확인됨 (9단계) : 기간 안(checkedMonths 3 | 12 | 0 = 전체 | -1 = 끄기) 방문 기록이 있는 건물.
+	     건물마다 EXISTS 를 돌리면 72,961동 × 서브쿼리라 느려서, 기간 안 확인 건물(수십 동)을 먼저 뽑아 LEFT JOIN 한다 -->
+	<sql id="checkedJoin">LEFT JOIN (SELECT DISTINCT vh.bld_id FROM visit_history vh
+		WHERE #{checkedMonths} >= 0 AND (#{checkedMonths} &lt;= 0 OR vh.visited_at >= DATE_SUB(NOW(), INTERVAL #{checkedMonths} MONTH))) ch ON ch.bld_id = b.bld_id</sql>
+	<sql id="checkedExists">(ch.bld_id IS NOT NULL)</sql>
 
-	<!-- 옥탑 거주 건물 : mapper-resident.rooftopJoin (residency(res_flr, bld_id) 인덱스로 980동만 읽음) -->
+	<!-- 점수 = 주거 공간 GREATEST + 건물 상태 합 + 침수 위험 합 + 경제 여건, ROUND 정수 (기본 45/20/25/10 : 반지하 + 노후 + 저지대 = 45 + 10 + 12.5 = 68) -->
+	<sql id="scoreExpr">CAST(ROUND(
+		  GREATEST(<include refid="mapper-building.ptUgrnd"/>, <include refid="mapper-building.ptGosiwon"/>, <include refid="mapper-building.ptRooftop"/>)
+		+ <include refid="mapper-building.ptOld"/> + <include refid="mapper-building.ptViol"/>
+		+ <include refid="mapper-building.ptFlood"/> + <include refid="mapper-building.ptLow"/>
+		+ <include refid="mapper-building.ptCheap"/>) AS SIGNED)</sql>
+
+	<!-- 옥탑 거주 건물 = bld_resident_stat.rooftop_hh_cnt > 0 (04 에서 한 번 계산. residency 를 매번 훑지 않는다) -->
+	<sql id="statJoin">LEFT JOIN bld_resident_stat rs ON rs.bld_id = b.bld_id</sql>
 	<!-- 지역 조건 (gu = sgg_cd, dong = emd_nm) -->
 	<sql id="areaWhere">
 		<if test="gu != null and gu != ''">AND b.sgg_cd = #{gu}</if>
 		<if test="dong != null and dong != ''">AND b.emd_nm = #{dong}</if>
+		<if test="adm != null and adm != ''">AND b.adm_nm = #{adm}</if>
 	</sql>
 
 	<!-- 점수가 붙은 건물 한 줄 (내부 조회용). 바깥 쿼리에서 t.score 로 거른다 -->
@@ -35,16 +53,23 @@
 		     , <include refid="mapper-building.ptUgrnd"/>   pt_ugrnd
 		     , <include refid="mapper-building.ptGosiwon"/> pt_gosiwon
 		     , <include refid="mapper-building.ptRooftop"/> pt_rooftop
-		     , <include refid="mapper-building.ptViol"/>    pt_viol
-		     , <include refid="mapper-building.ptOld"/>     pt_old
-		     , <include refid="mapper-building.ptFlood"/>   pt_flood
-		     , <include refid="mapper-building.ptLow"/>     pt_low
+		     , ROUND(<include refid="mapper-building.ptViol"/>)    pt_viol
+		     , ROUND(<include refid="mapper-building.ptOld"/>)     pt_old
+		     , ROUND(<include refid="mapper-building.ptFlood"/>)   pt_flood
+		     , ROUND(<include refid="mapper-building.ptLow"/>)     pt_low
 		     , <include refid="mapper-building.ptCheap"/>   pt_cheap
 		     , <include refid="mapper-building.scoreExpr"/> score
 		     , CASE WHEN b.useapr_day IS NOT NULL AND LENGTH(b.useapr_day) = 8
 		            THEN YEAR(CURDATE()) - CAST(LEFT(b.useapr_day, 4) AS UNSIGNED) END bld_age
+		     , IFNULL(rs.vuln_hh_cnt, 0)  vuln_hh_cnt
+		     , IFNULL(rs.priority_sum, 0) priority_sum
+		     , IFNULL(rs.high_iso_cnt, 0) high_iso_cnt
+		     , IFNULL(rs.old75_cnt, 0)    old75_cnt
+		     , IFNULL(rs.severe_cnt, 0)   severe_cnt
+		     , <include refid="mapper-building.checkedExists"/> checked
 		  FROM building b
-		  <include refid="mapper-resident.rooftopJoin"/>
+		  <include refid="mapper-building.statJoin"/>
+		  <include refid="mapper-building.checkedJoin"/>
 		 WHERE 1 = 1
 		 <include refid="mapper-building.areaWhere"/>
 	</sql>
@@ -57,12 +82,32 @@
 		, IF(t.pt_low     > 0, '저지대', NULL), IF(t.pt_cheap   > 0, '저가', NULL))</sql>
 
 	<!-- 구·동 선택 목록 -->
-	<select id="getDongList" resultType="wellfair.to.DongTO">
+	<!-- 법정동 목록 (+ 건물 범위). gu 가 있으면 그 구만 -->
+	<select id="getDongList" parameterType="String" resultType="wellfair.to.DongTO">
 		SELECT sgg_cd, emd_nm, AVG(lat) lat, AVG(lng) lng, COUNT(*) cnt
+		     , MIN(lat) min_lat, MIN(lng) min_lng, MAX(lat) max_lat, MAX(lng) max_lng
 		  FROM building
+		 <if test="_parameter != null and _parameter != ''">WHERE sgg_cd = #{gu}</if>
 		 GROUP BY sgg_cd, emd_nm
 		 ORDER BY sgg_cd, emd_nm
 	</select>
+
+	<!-- 법정동 → 행정동 쌍 (5-1 동 선택 2단계). 행정동은 03_adm_dong.sql 이 좌표 공간조인으로 붙였다.
+	     경계 오차로 다른 구 행정동이 붙은 건물(125쌍 중 9쌍, 예: 구로구 개봉동 → 신정3동)은 코드 앞 5자리(구)로 거른다 -->
+	<select id="getAdmList" parameterType="String" resultType="wellfair.to.DongTO">
+		SELECT sgg_cd, emd_nm, adm_cd, adm_nm, AVG(lat) lat, AVG(lng) lng, COUNT(*) cnt
+		     , MIN(lat) min_lat, MIN(lng) min_lng, MAX(lat) max_lat, MAX(lng) max_lng
+		  FROM building
+		 WHERE adm_nm IS NOT NULL AND LEFT(adm_cd, 5) = sgg_cd
+		 <if test="_parameter != null and _parameter != ''">AND sgg_cd = #{gu}</if>
+		 GROUP BY sgg_cd, emd_nm, adm_cd, adm_nm
+		 ORDER BY sgg_cd, emd_nm, adm_nm
+	</select>
+
+	<!-- 결과 리스트 "지도 화면 안" ([이 지역에서 재검색] 뒤, bbox 가 있을 때만) -->
+	<sql id="bboxWhere">
+		<if test="minLat != null">AND b.lat BETWEEN #{minLat} AND #{maxLat} AND b.lng BETWEEN #{minLng} AND #{maxLng}</if>
+	</sql>
 
 	<!-- 구 경계 계산용 좌표 (앱에서 한 번만 읽어 볼록 껍질을 만든다) -->
 	<select id="getCoordList" resultType="wellfair.to.DongTO">
@@ -71,7 +116,7 @@
 
 	<!-- 구 단위 요약 : 구마다 전체 · 기준점 이상 건물 수 ("위험 N곳") -->
 	<select id="getGuSummary" parameterType="wellfair.to.AnalysisCriteriaTO" resultType="wellfair.to.GuTO">
-		SELECT t.sgg_cd, AVG(t.lat) lat, AVG(t.lng) lng, COUNT(*) total, SUM(t.score >= #{scoreMin}) risk_count
+		SELECT t.sgg_cd, AVG(t.lat) lat, AVG(t.lng) lng, COUNT(*) total, SUM(t.score >= #{scoreMin}) risk_count, SUM(t.checked) checked_cnt
 		  FROM (<include refid="mapper-building.scoredSelect"/>) t
 		 GROUP BY t.sgg_cd
 		 ORDER BY t.sgg_cd
@@ -84,9 +129,10 @@
 		SELECT FLOOR(t.lng / #{cell})    ix
 		     , FLOOR(t.lat / #{cellLat}) iy
 		     , COUNT(*)                  size
-		     , AVG(t.lng)                lng
-		     , AVG(t.lat)                lat
+		     , IFNULL(AVG(CASE WHEN t.score >= #{scoreMin} THEN t.lng END), AVG(t.lng)) lng   /* 도넛 위치 = 기준점 이상 건물들의 평균 (없으면 전체 평균) */
+		     , IFNULL(AVG(CASE WHEN t.score >= #{scoreMin} THEN t.lat END), AVG(t.lat)) lat
 		     , SUM(t.score >= #{scoreMin}) risk_count
+		     , SUM(t.checked)            checked_cnt
 		     , MAX(t.score)              max_score
 		     , SUM(t.score >= 80)                       h_red
 		     , SUM(t.score >= 60 AND t.score &lt; 80)   h_orange
@@ -102,25 +148,26 @@
 		 GROUP BY ix, iy
 	</select>
 
-	<!-- 확대 : bbox 안 건물 핀 (점수 높은 순, 최대 limit) -->
+	<!-- 확대 : bbox 안 건물 핀 (점수 높은 순 · 동점 순서, 최대 limit) -->
 	<select id="getMarkerList" parameterType="wellfair.to.AnalysisCriteriaTO" resultType="wellfair.to.BuildingMarkerTO">
-		SELECT t.bld_id, t.lat, t.lng, t.score, t.bld_nm, t.addr, t.use_nm
+		SELECT t.bld_id, t.lat, t.lng, t.score, t.bld_nm, t.addr, t.use_nm, t.vuln_hh_cnt, t.checked
 		  FROM (
 			<include refid="mapper-building.scoredSelect"/>
 			   AND b.lat BETWEEN #{minLat} AND #{maxLat}
 			   AND b.lng BETWEEN #{minLng} AND #{maxLng}
 		  ) t
-		 ORDER BY t.score DESC, t.bld_age DESC
+		 ORDER BY t.score DESC, t.vuln_hh_cnt DESC, t.priority_sum DESC, t.bld_id
 		 LIMIT #{limit}
 	</select>
 
-	<!-- 분석 전 : 현장 확인된 건물 핀 (visit_history 에 방문 기록이 있는 건물, 사용자 무관) -->
+	<!-- 현장 확인된 건물 (visit_history, 사용자 무관). 기간 = checkedMonths. 핀 모드에서 점수 기준 아래라 핀이 없는 건물만 파란 체크 점으로 (map-marker.js) -->
 	<select id="getCheckedList" parameterType="wellfair.to.AnalysisCriteriaTO" resultType="wellfair.to.BuildingMarkerTO">
-		SELECT b.bld_id, b.lat, b.lng, b.bld_nm, b.addr, 0 score
+		SELECT b.bld_id, b.lat, b.lng, b.bld_nm, b.addr, 0 score, 1 checked
 		     , DATE_FORMAT(MAX(vh.visited_at), '%Y-%m-%d') checked_at
 		  FROM visit_history vh
 		  JOIN building b ON b.bld_id = vh.bld_id
-		 WHERE 1 = 1
+		 WHERE #{checkedMonths} >= 0
+		   AND (#{checkedMonths} &lt;= 0 OR vh.visited_at >= DATE_SUB(NOW(), INTERVAL #{checkedMonths} MONTH))
 		   <include refid="mapper-building.areaWhere"/>
 		 GROUP BY b.bld_id, b.lat, b.lng, b.bld_nm, b.addr
 	</select>
@@ -130,6 +177,7 @@
 		SELECT COUNT(*)
 		  FROM (
 			<include refid="mapper-building.scoredSelect"/>
+			<include refid="mapper-building.bboxWhere"/>
 			<if test="q != null and q != ''">AND (b.addr LIKE CONCAT('%', #{q}, '%') OR b.bld_nm LIKE CONCAT('%', #{q}, '%'))</if>
 		  ) t
 		 WHERE t.score >= #{scoreMin}
@@ -138,19 +186,20 @@
 	<!-- 결과 리스트 : 한 페이지 -->
 	<select id="getResultList" parameterType="wellfair.to.AnalysisCriteriaTO" resultType="wellfair.to.BuildingTO">
 		SELECT t.bld_id, t.sgg_cd, t.emd_nm, t.addr, t.bld_nm, t.use_nm, t.grnd_flr, t.ugrnd_flr, t.lat, t.lng
-		     , t.score, t.bld_age
+		     , t.score, t.bld_age, t.vuln_hh_cnt, t.priority_sum
 		     , t.pt_ugrnd, t.pt_gosiwon, t.pt_rooftop, t.pt_viol, t.pt_old, t.pt_flood, t.pt_low, t.pt_cheap
 		     , <include refid="mapper-building.factorText"/> factor_text
 		  FROM (
 			<include refid="mapper-building.scoredSelect"/>
+			<include refid="mapper-building.bboxWhere"/>
 			<if test="q != null and q != ''">AND (b.addr LIKE CONCAT('%', #{q}, '%') OR b.bld_nm LIKE CONCAT('%', #{q}, '%'))</if>
 		  ) t
 		 WHERE t.score >= #{scoreMin}
 		 ORDER BY
 		 <choose>
-		 	<when test="sort == 'old'">t.bld_age DESC, t.score DESC</when>
-		 	<when test="sort == 'addr'">t.addr ASC</when>
-		 	<otherwise>t.score DESC, t.bld_age DESC, t.bld_id</otherwise>
+		 	<when test="sort == 'old'">t.bld_age DESC, t.score DESC, t.vuln_hh_cnt DESC, t.priority_sum DESC, t.bld_id</when>
+		 	<when test="sort == 'addr'">t.addr ASC, t.bld_id</when>
+		 	<otherwise>t.score DESC, t.vuln_hh_cnt DESC, t.priority_sum DESC, t.bld_id</otherwise>
 		 </choose>
 		 LIMIT #{size} OFFSET #{offset}
 	</select>

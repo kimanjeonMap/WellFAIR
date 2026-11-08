@@ -21,6 +21,7 @@ public class ClusterTO {
 	private double lat;
 	private int size;
 	private int riskCount;
+	private int checkedCnt;     // 칸 안 현장 확인된 건물 수 (도넛 오른쪽 아래 파란 체크 배지)
 	private int maxScore;
 	private double[] cell;
 	private BuildingMarkerTO point;

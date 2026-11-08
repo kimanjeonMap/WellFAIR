@@ -13,5 +13,6 @@ public class GuTO {
 	private double lng;
 	private int total;
 	private int riskCount;              // scoreMin 이상 건물 수
+	private int checkedCnt;             // 현장 확인된 건물 수 (checkedMonths 기간)
 	private List<double[]> ring;        // [[lng, lat], ...]
 }

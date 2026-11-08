@@ -1,19 +1,22 @@
 /*
- * 보관함 (archive.jsp) : 정렬 · 선택 · 저장 드롭다운 · 행 클릭 상세 패널
- *  - 행 상세는 지도의 MapPanel 을 그대로 쓰되 주소만 api/archive/detail.do 로
+ * 보관함 (archive.jsp) : 정렬 · 선택 · 저장 드롭다운 · 행 클릭 → 05 건물 확인 이력 (archivedetail.do)
  */
 $(function () {
   var ctx = Common.ctx;
 
-  /* 상세는 보관함 API 로 */
-  MapApi.building = function (params) { return Common.api('GET', 'api/archive/detail.do', params); };
-  MapPanel.init({ getCriteria: function () { return {}; }, onArchived: function () {}, onClose: function () {} });
-  $('#btnArchive').hide();   // 이미 보관함에 있는 건물
-
   /* 정렬 · 구 바꾸면 바로 조회 */
   $('#sortSeg button').on('click', function () { $('#sortField').val($(this).data('sort')); $('#filterForm').trigger('submit'); });
-  $('#selGu').on('change', function () { $('#selDong').val(''); $('#filterForm').trigger('submit'); });
-  $('#selDong').on('change', function () { $('#filterForm').trigger('submit'); });
+  $('#selGu').on('change', function () { $('#selDong').val(''); $('#selAdm').val(''); $('#filterForm').trigger('submit'); });
+  $('#selDong').on('change', function () { $('#selAdm').val(''); $('#filterForm').trigger('submit'); });
+  $('#selAdm').on('change', function () { $('#filterForm').trigger('submit'); });
+
+  /* [상세 필터] 펼치기 · 접기 (펼침 상태는 fopen 으로 같이 보낸다) */
+  $('#btnFilter').on('click', function () {
+    var open = !$('#filterDetail').is(':visible');
+    $('#filterDetail').toggle(open);
+    $(this).toggleClass('on', open);
+    $('#fopen').val(open);
+  });
 
   /* 선택 */
   function refreshSel() {
@@ -58,11 +61,9 @@ $(function () {
     $('#deleteForm').trigger('submit');
   });
 
-  /* 행 클릭 → 상세 패널 */
+  /* 행 클릭 → 05 건물 확인 이력 */
   $('#archiveTbl tbody').on('click', 'tr[data-id]', function (e) {
-    if ($(e.target).closest('input, button, .dd').length) return;
-    $('#archiveTbl tr').removeClass('sel');
-    $(this).addClass('sel');
-    MapPanel.show(String($(this).data('id')));
+    if ($(e.target).closest('input, button, .dd, a').length) return;
+    location.href = Common.url('archivedetail.do?bldId=' + encodeURIComponent(String($(this).data('id'))));
   });
 });

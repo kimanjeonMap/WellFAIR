@@ -12,9 +12,12 @@ import wellfair.to.AnalysisCriteriaTO;
 import wellfair.to.ArchiveRowTO;
 import wellfair.to.ArchiveTO;
 import wellfair.to.DashboardTO;
+import wellfair.to.MemoTO;
+import wellfair.to.RecordTO;
 import wellfair.to.StatusCountTO;
+import wellfair.to.TransferTO;
 
-// ArchiveService 에서만 부른다. 메서드명 = mapper-archive.xml 의 id (테이블은 vulnerability_list / vulnerability_factor)
+// ArchiveService 에서만 부른다. 메서드명 = mapper-archive.xml 의 id (테이블은 vulnerability_list / vulnerability_factor + 05 의 survey_record · transfer_log · handover_memo)
 @Component
 public class ArchiveDAO {
 
@@ -48,6 +51,13 @@ public class ArchiveDAO {
 		return session.selectList("mapper-archive.getArchiveList", c);
 	}
 
+	public List<String> getArchiveUseList(long userId, String gu) {
+		Map<String, Object> p = new HashMap<>();
+		p.put("userId", userId);
+		p.put("gu", gu);
+		return session.selectList("mapper-archive.getArchiveUseList", p);
+	}
+
 	public int deleteFactors(long userId, List<Long> factorIds) {
 		Map<String, Object> p = new HashMap<>();
 		p.put("userId", userId);
@@ -68,5 +78,40 @@ public class ArchiveDAO {
 		p.put("months", months);
 		p.put("gu", gu);
 		return session.selectList("mapper-archive.getMonthlyDone", p);
+	}
+
+	// ---------- 05 건물 확인 이력 ----------
+	public ArchiveTO getFactorByBld(long userId, String bldId) {
+		Map<String, Object> p = new HashMap<>();
+		p.put("userId", userId);
+		p.put("bldId", bldId);
+		return session.selectOne("mapper-archive.getFactorByBld", p);
+	}
+
+	public Long getPlanByBld(long userId, String bldId) {
+		Map<String, Object> p = new HashMap<>();
+		p.put("userId", userId);
+		p.put("bldId", bldId);
+		return session.selectOne("mapper-archive.getPlanByBld", p);
+	}
+
+	public List<RecordTO> getRecordList(String bldId) {
+		return session.selectList("mapper-archive.getRecordList", bldId);
+	}
+
+	public List<TransferTO> getTransferList(String bldId) {
+		return session.selectList("mapper-archive.getTransferList", bldId);
+	}
+
+	public int addTransfer(TransferTO to) {
+		return session.insert("mapper-archive.addTransfer", to);
+	}
+
+	public List<MemoTO> getMemoList(String bldId) {
+		return session.selectList("mapper-archive.getMemoList", bldId);
+	}
+
+	public int addMemo(MemoTO to) {
+		return session.insert("mapper-archive.addMemo", to);
 	}
 }

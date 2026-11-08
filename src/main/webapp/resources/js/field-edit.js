@@ -10,7 +10,7 @@ $(function () {
   var items = D.items.slice();            // [{factorId, bldId, title, lat, lng, score, checked, sggCd}]
   var byFactor = {};
   D.pick.forEach(function (p) { byFactor[p.factorId] = p; });
-  var mode = 'walk';
+  var mode = ($('#modeSeg button.on').data('mode')) || 'walk';   // 저장된 이동수단 (survey_list.move_mode)
 
   /* 출발점 (구청) */
   var $start = $('#startSel');
@@ -140,7 +140,12 @@ $(function () {
 
   $('#pickList').on('change', '.pick-chk', function () { if (this.checked) add(Number(this.value)); else remove(Number(this.value)); });
   $('#feItems').on('click', '.rm', function () { remove(Number($(this).closest('.fe-item').data('factor'))); });
-  $('#modeSeg button').on('click', function () { $('#modeSeg button').removeClass('on'); $(this).addClass('on'); mode = $(this).data('mode'); render(); });
+  $('#modeSeg button').on('click', function () {
+    $('#modeSeg button').removeClass('on'); $(this).addClass('on');
+    mode = $(this).data('mode');
+    $('#moveMode').val(mode.toUpperCase());      // 저장 시 survey_list.move_mode
+    render();
+  });
   $('#btnOptimize').on('click', optimize);
   $start.on('change', render);
   $('#onlyMine').on('change', drawMap);

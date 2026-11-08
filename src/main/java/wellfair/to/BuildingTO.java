@@ -42,6 +42,8 @@ public class BuildingTO {
 	private int score;          // 취약 점수 (100점 만점)
 	private int ptUgrnd, ptGosiwon, ptRooftop, ptViol, ptOld, ptFlood, ptLow, ptCheap;  // 요인별 점수
 	private Integer bldAge;     // 사용승인 후 경과 년수 (없으면 null)
+	private int vulnHhCnt;      // 취약 가구 수 (bld_resident_stat, 동점 2순위)
+	private int prioritySum;    // 가구 가점 합 (동점 3순위)
 	private String factorText;  // "지하층 · 노후 · 침수"
 	private int rank;           // 결과 리스트 순번 (서비스에서)
 

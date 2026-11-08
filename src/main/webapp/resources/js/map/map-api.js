@@ -18,7 +18,10 @@ window.MapApi = (function () {
     /* 분석 전 : 현장 확인됨 핀 */
     checked: function (params) { return api('GET', 'api/map/checked.do', params); },
 
-    /* 오른쪽 결과 리스트 (PageTO) */
+    /* 동 선택 2단계 : 법정동 → 행정동 (DongTO, adms 포함) */
+    dongs: function (params) { return api('GET', 'api/map/dongs.do', params); },
+
+    /* 오른쪽 결과 리스트 (PageTO). 범위 = gu/dong/adm 또는 bbox */
     results: function (params) { return api('GET', 'api/map/results.do', params); },
 
     /* 건물 상세 (BuildingDetailTO) */

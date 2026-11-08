@@ -15,4 +15,12 @@
 		 WHERE login_id = #{loginId}
 	</select>
 
+	<!-- 같은 구 사용자 목록 (05 인수인계 받는 담당자). sggCd 없으면(서울시청) 전체 -->
+	<select id="getUserList" parameterType="String" resultType="wellfair.to.MemberTO">
+		SELECT user_id, login_id, sgg_cd, user_nm, dept_nm, rank_nm
+		  FROM users
+		 <if test="_parameter != null and _parameter != ''">WHERE sgg_cd = #{sggCd}</if>
+		 ORDER BY user_id
+	</select>
+
 </mapper>

@@ -10,6 +10,7 @@ window.MAP_CONFIG = {
   ZOOM: {
     INIT: 13,          // 시작 (카카오 7) : 구 단위 (서울시청 = 3개 구 전체)
     GU: 14,            // 구청 계정 시작 : 소속 구 하나가 화면에 꽉 차는 줌 (구 단위)
+    LOCK_MIN: 12,      // 구청 계정 최소 줌 (관할 밖으로 너무 멀리 못 나가게, 11단계)
     MIN: 11,
     MAX: 19,
     CLUSTER_MIN: 15,   // 15 이상 : 격자 도넛 묶음
@@ -20,8 +21,12 @@ window.MAP_CONFIG = {
 
   /* 묶음 칸 크기 : 화면에서 이 픽셀 크기 칸 안의 건물을 도넛 하나로 */
   CLUSTER_PX: 120,
-  /* 건물 단위에서 한 화면에 그리는 핀 최대 수 (점수 높은 순) */
+  /* 그린 뒤 화면에서 이 픽셀 거리 안에 있는 도넛끼리는 하나로 합친다 (바둑판 모양 방지) */
+  MERGE_PX: 70,
+  /* 건물 단위에서 한 화면에 받는 건물 최대 수 (점수 높은 순) */
   BUILDING_LIMIT: 1500,
+  /* 그중 아이콘 핀으로 그리는 수 (점수 순, 동점은 취약 가구 수 순). 나머지는 지름 8px 색 점 */
+  PIN_ICON_MAX: 200,
 
   COLORS: { red: '#D93A3A', orange: '#EC8B2F', yellow: '#E2B52A', green: '#3E9E5A', blue: '#4a8fe0' },
 
@@ -33,11 +38,11 @@ window.MAP_CONFIG = {
     { min: 0,  key: 'green',  label: '40점 미만', rank: 1 }
   ],
 
-  /* 구 단위 "위험 N곳" → 구 색 (임시값) */
+  /* 구 단위 "위험 N곳" → 구 색. 기준점 80 · 기본 가중치(10단계 규칙)로 세면 구마다 약 760~1,750동 (2026-11-08) */
   GU_LEVELS: [
-    { min: 1000, key: 'red' },
-    { min: 400,  key: 'orange' },
-    { min: 100,  key: 'yellow' },
+    { min: 1500, key: 'red' },
+    { min: 1000, key: 'orange' },
+    { min: 500,  key: 'yellow' },
     { min: 0,    key: 'green' }
   ],
 
@@ -51,13 +56,14 @@ window.MAP_CONFIG = {
   /* 핀 머리 그림 : building.use_nm → 용도 묶음 */
   USE_GROUP: { '단독주택': '단독주택', '공동주택': '공동주택', '업무시설': '업무시설', '제1종근린생활시설': '업무시설', '제2종근린생활시설': '업무시설' },
 
-  /* 가중치 조정 팝업 (Figma) : 묶음 하나가 요인 둘에 같이 적용 */
+  /* 가중치 = 위험 유형 4묶음, 합계 100 (5-1). 서버 파라미터 = key + 'W' (spaceW bldW floodW econW) */
   WEIGHT_GROUPS: [
-    { key: 'a', label: '지하층 · 고시원',   def: 30, max: 50, factors: ['ugrnd', 'gosiwon'] },
-    { key: 'b', label: '옥탑 · 위반건축물', def: 20, max: 50, factors: ['rooftop', 'viol'] },
-    { key: 'c', label: '노후 · 침수',       def: 15, max: 50, factors: ['old', 'flood'] },
-    { key: 'd', label: '저지대 · 저가',     def: 5,  max: 30, factors: ['low', 'cheap'] }
+    { key: 'space', label: '주거 공간', def: 45, factors: ['ugrnd', 'rooftop', 'gosiwon'], names: '지하층 · 옥탑 · 고시원' },
+    { key: 'bld',   label: '건물 상태', def: 20, factors: ['old', 'viol'],                names: '노후 · 위반건축물' },
+    { key: 'flood', label: '침수 위험', def: 25, factors: ['flood', 'low'],               names: '침수 이력 · 저지대' },
+    { key: 'econ',  label: '경제 여건', def: 10, factors: ['cheap'],                      names: '저가 주택' }
   ],
+  WEIGHT_STEP: 5,
 
   /* 왼쪽 패널 요인. param 이 있으면 슬라이더 기준값이 서버 파라미터로 간다 */
   FACTORS: [
@@ -66,12 +72,15 @@ window.MAP_CONFIG = {
     { key: 'gosiwon', on: true },
     { key: 'viol',    on: true },
     { key: 'old',     on: true,  param: 'oldYears', def: 30, min: 10, max: 50, step: 1,   fmt: function (v) { return v + '년 이상'; } },
-    { key: 'cheap',   on: false, param: 'cheapPct', def: 20, min: 5,  max: 50, step: 5,   fmt: function (v) { return v + '% 이하'; } },
+    { key: 'cheap',   on: true,  param: 'cheapPct', def: 20, min: 5,  max: 50, step: 5,   fmt: function (v) { return v + '% 이하'; } },
     { key: 'flood',   on: true,  param: 'floodCnt', def: 1,  min: 1,  max: 5,  step: 1,   fmt: function (v) { return v + '회 이상'; } },
     { key: 'low',     on: true,  param: 'lowElev',  def: 15, min: 5,  max: 40, step: 1,   fmt: function (v) { return v + 'm 이하'; } }
   ],
 
-  SCORE_MIN: 70,
-  /* 지도 위 체크박스 "70점 이상만 보기" 기본값 (살피구로 riskOnly) */
+  /* 기준점 : app.properties app.analysis.score-min (map.jsp 가 APP_SCORE_MIN 으로 넘김). 기본 80 */
+  SCORE_MIN: window.APP_SCORE_MIN || 80,
+  /* 현장 확인됨 표시 기간 기본값 (개월). 12 = 1년, 0 = 전체, -1 = 끄기. 범례의 "현장 확인됨" 에서 바꾼다 */
+  CHECKED_MONTHS: 3,
+  /* 지도 위 체크박스 "80점 이상만 보기" 기본값 (살피구로 riskOnly) */
   RISK_ONLY: true
 };

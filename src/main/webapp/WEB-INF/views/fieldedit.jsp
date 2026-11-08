@@ -17,6 +17,7 @@
 
   <form method="post" action="${ctx}/fieldedit.do" id="editForm">
     <input type="hidden" name="listId" value="${field.surveyId}">
+    <input type="hidden" name="moveMode" id="moveMode" value="${empty field.moveMode ? 'WALK' : field.moveMode}">
     <div id="orderIds"></div>
 
     <div class="fe-grid">
@@ -28,7 +29,7 @@
             <label class="pick-row" data-factor="${p.factorId}">
               <input type="checkbox" class="pick-chk" value="${p.factorId}">
               <span><c:out value="${fn:substringAfter(fn:replace(p.addr, '서울특별시 ', ''), '구 ')}"/> <c:out value="${empty p.bldNm ? p.useNm : p.bldNm}"/></span>
-              <span class="tag"><c:out value="${empty p.factorText ? '요인 없음' : fn:split(p.factorText, '·')[0]}"/></span>
+              <span class="tag"><c:out value="${empty p.factorText ? '요인 없음' : fn:split(p.factorText, '·')[0]}"/><c:if test="${p.vulnHhCnt > 0}"> · 가구 ${p.vulnHhCnt}</c:if></span>
               <span class="sc">${p.score}</span>
               <span>
                 <c:choose>
@@ -53,10 +54,12 @@
         </div>
         <div class="fe-items" id="feItems"></div>
         <div class="fe-foot">
+          <%-- 이동수단 : 저장하면 survey_list.move_mode (5-1) --%>
+          <c:set var="mm" value="${empty field.moveMode ? 'WALK' : field.moveMode}"/>
           <div class="seg" id="modeSeg">
-            <button type="button" data-mode="walk" class="on">도보</button>
-            <button type="button" data-mode="transit">대중교통</button>
-            <button type="button" data-mode="car">자동차</button>
+            <button type="button" data-mode="walk" class="${mm == 'WALK' ? 'on' : ''}">도보</button>
+            <button type="button" data-mode="transit" class="${mm == 'TRANSIT' ? 'on' : ''}">대중교통</button>
+            <button type="button" data-mode="car" class="${mm == 'CAR' ? 'on' : ''}">자동차</button>
           </div>
           <button type="submit" class="btn btn-primary">변경 내용 저장</button>
         </div>

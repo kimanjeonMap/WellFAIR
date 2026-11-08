@@ -14,12 +14,26 @@ import wellfair.to.FieldListTO;
 
 /**
  * 현장확인 리스트. FieldDAO 는 여기서만.
- * 경로는 직선거리(하버사인)로 계산 : 도보 4km/h · 자동차 20km/h · 대중교통 12km/h, 건물당 확인 20분
+ * 경로는 직선거리(하버사인)로 계산 : 도보 4km/h · 대중교통 15km/h · 자동차 20km/h (× 1.3 도로 보정), 건물당 확인 20분
+ * 이동수단은 survey_list.move_mode (WALK / TRANSIT / CAR) 에 저장. field-map.js SPEED 와 같은 값
  */
 @Service
 public class FieldService {
 
-	public static final double WALK_KMH = 4, CAR_KMH = 20, TRANSIT_KMH = 12;
+	public static final double WALK_KMH = 4, CAR_KMH = 20, TRANSIT_KMH = 15;
+
+	/** move_mode → 평균속도 (모르는 값은 도보) */
+	public static double speedOf(String moveMode) {
+		if ("CAR".equals(moveMode)) return CAR_KMH;
+		if ("TRANSIT".equals(moveMode)) return TRANSIT_KMH;
+		return WALK_KMH;
+	}
+	/** 화면 값(walk/transit/car) → DB 값. 모르는 값은 null */
+	public static String moveModeOf(String v) {
+		if (v == null) return null;
+		String m = v.trim().toUpperCase();
+		return m.equals("WALK") || m.equals("TRANSIT") || m.equals("CAR") ? m : null;
+	}
 	public static final double ROAD_FACTOR = 1.3;          // 직선거리 → 도로 보정 (field-map.js 와 같은 값)
 	public static final int CHECK_MIN_PER_BLD = 20;
 
@@ -58,7 +72,7 @@ public class FieldService {
 	 * 확인 기록이 있는 항목은 목록에서 빠져도 남는다(FK).
 	 * 한 리스트 = 한 구 : 다른 구 건물이 섞이면 IllegalArgumentException (메시지를 화면에 그대로 띄운다)
 	 */
-	public long saveField(long userId, String userGu, long surveyId, String title, List<Long> factorIds) {
+	public long saveField(long userId, String userGu, long surveyId, String title, String moveMode, List<Long> factorIds) {
 		List<Long> ids = factorIds == null ? new ArrayList<>() : factorIds;
 		FieldListTO old = surveyId > 0 ? dao.getField(surveyId, userId, userGu) : null;
 		if (surveyId > 0 && old == null) return 0;
@@ -67,6 +81,7 @@ public class FieldService {
 		FieldListTO f = new FieldListTO();
 		f.setUserId(userId);
 		f.setSggCd(listGu);
+		f.setMoveMode(moveModeOf(moveMode));       // null 이면 새 리스트 WALK / 기존 값 유지
 		f.setTitle(title == null || title.isBlank() ? "새 현장확인 리스트" : title.trim());
 		if (surveyId <= 0) {
 			dao.addField(f);
@@ -108,6 +123,13 @@ public class FieldService {
 		return surveyId;
 	}
 
+	// 03-2 소요시간 카드 : 이동수단만 바꿔 저장 (내 리스트가 아니거나 값이 이상하면 false)
+	public boolean updateMoveMode(long userId, String userGu, long surveyId, String moveMode) {
+		String m = moveModeOf(moveMode);
+		if (m == null || dao.getField(surveyId, userId, userGu) == null) return false;
+		return dao.updateMoveMode(surveyId, userId, m) > 0;
+	}
+
 	/**
 	 * 리스트의 구를 정한다 (CLAUDE.md 5-1 : 현장확인 리스트는 한 구 안의 건물만).
 	 *  userGu(구청 계정) > 리스트에 이미 정해진 구 > 담는 건물들의 구. 건물이 두 구에 걸치거나 정해진 구와 다르면 예외.
@@ -120,6 +142,12 @@ public class FieldService {
 		if (fixed != null && !gus.isEmpty() && !fixed.equals(gus.get(0)))
 			throw new IllegalArgumentException(ArchiveService.guName(fixed) + " 리스트에는 " + ArchiveService.guName(gus.get(0)) + " 건물을 담을 수 없습니다.");
 		return fixed != null ? fixed : gus.isEmpty() ? null : gus.get(0);
+	}
+
+	/** 05 현장 확인 결과 입력 (ArchiveService 가 plan 을 확인한 뒤 부른다) : visit_history 1건 + survey_record 1건 */
+	public void addCheck(FieldCheckTO c) {
+		dao.addVisit(c);
+		dao.addRecord(c);
 	}
 
 	// 확인 완료 처리 : visit_history 1건 + survey_record 1건

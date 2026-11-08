@@ -4,6 +4,8 @@
  *  - zoom_changed → 모드·범례 갱신, idle → 200ms 디바운스 후 loadPoints()
  *  - 요청 bbox = 화면 범위 + 여유, 요청 순번(pointSeq)으로 늦게 온 옛 응답은 버린다
  *  - 분석 전 : 현장 확인됨 핀 + 구 경계(기본 기준). "분석 실행" 후 : 기준값으로 다시 조회 + 결과 리스트
+ *  - 동 선택 2단계(법정동 → 행정동, api/map/dongs.do) · 결과 리스트 범위(구 전체 / 동 / "지도 화면 안") · [이 지역에서 재검색] (5-1)
+ *  - 구청 계정 (11단계) : 소속 구 밖은 어두운 가림막(구멍 뚫린 다각형) + 경계선, 관할 밖으로 나가면 안내 띠, 이동 범위 = 구 bbox + 2km, 최소 줌 12
  */
 $(function () {
   var C = window.MAP_CONFIG;
@@ -19,10 +21,13 @@ $(function () {
 
   var state = {
     analyzed: false,     // "분석 실행" 을 눌렀는지
-    criteria: null,      // 마지막으로 실행한 조건 (없으면 패널 기본값)
-    gu: window.LOCK_GU || '', dong: '', q: '',   // 구청 계정이면 소속 구로 고정 (selGu 는 disabled)
+    criteria: null,      // 확정된 조건 = 마지막으로 [분석 실행]한 값 (시작 때 패널 기본값을 한 번 찍어 둔다). 슬라이더만 움직인 값은 쓰지 않는다
+    gu: window.LOCK_GU || '', dong: '', adm: '', q: '',   // 구청 계정이면 소속 구로 고정 (selGu 는 disabled). dong = 법정동, adm = 행정동
+    bbox: null,              // [이 지역에서 재검색] 뒤의 리스트 범위 ("지도 화면 안"). 동을 다시 고르면 null
+    quietUntil: 0,           // 프로그램이 지도를 옮기는 동안(flyTo · fitTo)은 [재검색] 버튼을 띄우지 않는다
     selectedId: null,
     riskOnly: C.RISK_ONLY,   // 기준점 이상 건물이 있는 묶음 · 기준점 이상 핀만 (지도 위 칩으로 끄고 켬)
+    checkedMonths: C.CHECKED_MONTHS, // 현장 확인됨 기간 : 3 | 12 | 0 전체 | -1 끄기 (범례에서 고름)
     lastRaw: null,           // 마지막 응답 { mode, list } : 칩을 눌렀을 때 다시 요청하지 않고 다시 그린다
     pointSeq: 0,
     cellByLevel: {}      // zoom → 묶음 칸 크기 (같은 zoom 에서는 같은 값 → 지도를 옮겨도 묶음이 흔들리지 않음)
@@ -33,7 +38,7 @@ $(function () {
   var lockGu = C.GU.filter(function (x) { return x.code === state.gu; })[0];
   var map = hasMap ? new naver.maps.Map('map', {
     center: new naver.maps.LatLng(lockGu ? lockGu.lat : C.CENTER.lat, lockGu ? lockGu.lng : C.CENTER.lng),
-    zoom: lockGu ? C.ZOOM.GU : C.ZOOM.INIT, minZoom: C.ZOOM.MIN, maxZoom: C.ZOOM.MAX,
+    zoom: lockGu ? C.ZOOM.GU : C.ZOOM.INIT, minZoom: lockGu ? C.ZOOM.LOCK_MIN : C.ZOOM.MIN, maxZoom: C.ZOOM.MAX,
     zoomControl: false, mapDataControl: false, scaleControl: false,
     logoControlOptions: { position: naver.maps.Position.BOTTOM_RIGHT }
   }) : null;
@@ -47,15 +52,48 @@ $(function () {
   var modeOf = function (z) { return z >= C.ZOOM.BUILDING_MIN ? 'building' : z >= C.ZOOM.CLUSTER_MIN ? 'cluster' : 'gu'; };
   var flyTo = function (lat, lng, zoom) {
     if (!live()) return;
+    state.quietUntil = Date.now() + 2500;
     if (zoom == null || zoom === map.getZoom()) map.panTo(LL(lat, lng));
     else map.morph(LL(lat, lng), zoom);
   };
-  var criteria = function () { return state.criteria || MapLayer.getCriteria(); };
+  /* 동을 고르면 그 동 건물들의 범위로 (bbox = [minLng, minLat, maxLng, maxLat]) */
+  var fitTo = function (box) {
+    if (!live() || !box) return;
+    state.quietUntil = Date.now() + 2500;
+    map.fitBounds(new naver.maps.LatLngBounds(LL(box[1], box[0]), LL(box[3], box[2])), { top: 60, right: 40, bottom: 60, left: 40 });
+  };
+  var guOf = function (code) { return C.GU.filter(function (x) { return x.code === code; })[0]; };
+  var criteria = function () { return state.criteria || (state.criteria = MapLayer.getCriteria()); };
+  /* 지도 조회 파라미터 = 확정 조건 + 현장 확인됨 기간 */
+  var viewParams = function () { return $.extend({}, criteria(), { checkedMonths: state.checkedMonths }); };
 
-  /* 결과 리스트 · 상세 공용 파라미터 */
+  /* 결과 리스트 파라미터. 범위 = bbox("지도 화면 안") 또는 구·법정동·행정동 (기본 구 전체) */
   function listParams() {
-    return $.extend({}, criteria(), { gu: state.gu, dong: state.dong, q: state.q });
+    var p = $.extend({}, criteria(), { q: state.q });
+    if (state.bbox) p.bbox = state.bbox;
+    else { p.gu = state.gu; p.dong = state.dong; p.adm = state.adm; }
+    return p;
   }
+  /* 리스트 머리 : "구로구 · 구로동 · 구로2동" / "지도 화면 안" */
+  function renderScope() {
+    var g = guOf(state.gu);
+    $('#resultScope').text(state.bbox ? '지도 화면 안'
+      : [g ? g.name : '전체 3개 구', state.dong, state.adm].filter(Boolean).join(' · '));
+  }
+  /* 지도를 옮겨도 리스트는 그대로 (5-1). 분석 뒤 사용자가 옮겼을 때만 [이 지역에서 재검색] 을 띄운다 */
+  function onMoved() {
+    var out = checkOutside();
+    if (out || !state.analyzed || Date.now() < state.quietUntil) return;
+    $('#btnRefetch').addClass('show');
+  }
+  $('#btnRefetch').on('click', function () {
+    if (!live()) return;
+    var b = map.getBounds(), sw = b.getSW(), ne = b.getNE();
+    state.bbox = [sw.lng(), sw.lat(), ne.lng(), ne.lat()].map(function (v) { return v.toFixed(5); }).join(',');
+    $(this).removeClass('show');
+    renderScope();
+    MapResult.load(true);
+  });
 
   /* ---------- 서버 조회 (살피구로 loadPoints) ---------- */
   function loadPoints() {
@@ -65,7 +103,7 @@ $(function () {
     if (mode === 'gu') { state.lastRaw = null; MapMarker.clear(); return; }     // 구 단위에서는 건물·묶음 없음
     var b = map.getBounds(), sw = b.getSW(), ne = b.getNE();
     var pad = mode === 'cluster' ? 0.002 : 0.0005;        // 화면 바깥 조금 (건물 단위는 약 50m)
-    var q = $.extend({}, criteria());
+    var q = viewParams();
     q.bbox = [sw.lng() - pad, sw.lat() - pad, ne.lng() + pad, ne.lat() + pad].map(function (v) { return v.toFixed(5); }).join(',');
     var req;
     if (mode === 'cluster') {
@@ -88,9 +126,9 @@ $(function () {
   function renderMarks() {
     if (!state.lastRaw) { MapMarker.clear(); return; }
     var r = state.lastRaw, list;
-    if (r.mode === 'cluster') list = r.list.filter(function (c) { return c.point ? passRisk(c.point) : !state.riskOnly || c.riskCount > 0; });
+    if (r.mode === 'cluster') list = r.list.filter(function (c) { return c.point ? passRisk(c.point) : !state.riskOnly || c.riskCount > 0; });   // 켜져 있으면 기준점 이상이 0인 칸은 안 그린다
     else list = r.list.filter(passRisk);
-    MapMarker.render(r.mode, list);
+    MapMarker.render(r.mode, list, state.riskOnly);
     if (state.selectedId) MapMarker.select(state.selectedId);
   }
   /* 지도 위 칩 : 기준점 이상만 보기 켜고 끄기 */
@@ -109,11 +147,64 @@ $(function () {
   function scheduleLoad() { clearTimeout(moveTimer); moveTimer = setTimeout(loadPoints, 200); }
 
   function loadGus() {
-    MapApi.gus(criteria()).done(function (list) { MapMarker.renderGu(list); });
+    MapApi.gus(viewParams()).done(function (list) { MapMarker.renderGu(list); setupLock(list); });
   }
+
+  /* ---------- 구청 계정 : 관할 밖 가림막 · 경계선 · 이동 범위 (11단계). 첫 gus 응답의 소속 구 ring 으로 한 번만 ---------- */
+  var lock = { ring: null, bbox: null, mask: null, line: null };
+  function setupLock(list) {
+    if (!lockGu || lock.ring || !live()) return;
+    var g = (list || []).filter(function (x) { return x.sggCd === state.gu; })[0];
+    if (!g || !g.ring || g.ring.length < 3) return;
+    lock.ring = g.ring;                                           // [[lng, lat], ...] 닫힌 고리
+    var minLng = 999, minLat = 999, maxLng = -999, maxLat = -999;
+    g.ring.forEach(function (p) { minLng = Math.min(minLng, p[0]); maxLng = Math.max(maxLng, p[0]); minLat = Math.min(minLat, p[1]); maxLat = Math.max(maxLat, p[1]); });
+    lock.bbox = [minLng, minLat, maxLng, maxLat];
+    var hole = g.ring.map(function (p) { return LL(p[1], p[0]); });
+    /* 바깥 사각형(서울 서남부를 넉넉히) + 소속 구 ring 을 구멍으로. 지도 타일에 다크 필터(invert + hue-rotate)가 걸려 있어
+       오버레이도 같이 뒤집히므로, 화면에 #0b0d12 로 보이게 하려면 그 반전색(#f4f2ed)을 넣는다 */
+    var outer = [LL(37.2, 126.5), LL(37.2, 127.3), LL(37.8, 127.3), LL(37.8, 126.5), LL(37.2, 126.5)];
+    lock.mask = new naver.maps.Polygon({ map: map, paths: [outer, hole], fillColor: '#f4f2ed', fillOpacity: 0.6, strokeWeight: 0, strokeOpacity: 0, clickable: false, zIndex: 2 });
+    lock.line = new naver.maps.Polyline({ map: map, path: hole, strokeColor: '#4a8fe0', strokeWeight: 2, strokeOpacity: 1, clickable: false, zIndex: 3 });
+    /* 이동 범위 = 구 bbox + 사방 2km (위도 0.018°, 경도 0.0227°), 최소 줌 12 */
+    var dLat = 0.018, dLng = 0.0227;
+    map.setOptions({ maxBounds: new naver.maps.LatLngBounds(LL(minLat - dLat, minLng - dLng), LL(maxLat + dLat, maxLng + dLng)), minZoom: C.ZOOM.LOCK_MIN });
+    $('#outGu').text(lockGu.name);
+    checkOutside();
+  }
+  /* 점이 고리 안인지 (ray casting) */
+  function inRing(lng, lat, ring) {
+    var inside = false;
+    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      var xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if ((yi > lat) !== (yj > lat) && lng < (xj - xi) * (lat - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  /* 지도 중심이 소속 구 밖이면 안내 띠 (이때 [재검색] 은 숨김) */
+  function checkOutside() {
+    if (!lock.ring || !live()) return false;
+    var c = map.getCenter(), out = !inRing(c.lng(), c.lat(), lock.ring);
+    $('#outBar').toggleClass('show', out);
+    if (out) $('#btnRefetch').removeClass('show');
+    return out;
+  }
+  $('#btnBackGu').on('click', function () { if (lock.bbox) fitTo(lock.bbox); });
+  /* 현장 확인된 건물 목록. 핀 모드에서 핀이 없는 건물만 파란 체크 점으로 그려진다 (MapMarker 가 판단) */
   function loadChecked() {
-    MapApi.checked({ gu: state.gu, dong: state.dong }).done(function (list) { MapMarker.renderChecked(list); });
+    MapApi.checked({ gu: state.gu, dong: state.dong, adm: state.adm, checkedMonths: state.checkedMonths }).done(function (list) { MapMarker.renderChecked(list); });
   }
+  /* 범례 "현장 확인됨" 기간 바꾸기 → 구 요약 · 묶음/핀 · 체크 점 다시 */
+  var CHECK_LABEL = { 3: '최근 3개월', 12: '최근 1년', 0: '전체', '-1': '끄기' };
+  $('#legend').on('click', '#lgCheck', function (e) { e.stopPropagation(); $('#chkMenu').toggleClass('open'); });
+  $('#legend').on('click', '#chkMenu button', function (e) {
+    e.stopPropagation();
+    state.checkedMonths = Number($(this).data('m'));
+    $('#chkMenu').removeClass('open');
+    legendKey = null; renderLegend(modeOf(zoomNow()));
+    loadGus(); loadPoints(); loadChecked();
+  });
+  $(document).on('click', function () { $('#chkMenu').removeClass('open'); });
 
   /* 줌이 바뀌면 표시 방식 · 범례 (살피구로 onLevelChanged) */
   var legendKey = null;
@@ -125,41 +216,49 @@ $(function () {
     renderLegend(mode);
   }
   function renderLegend(mode) {
-    var key = mode + '|' + state.analyzed + '|' + state.riskOnly;
+    var key = mode + '|' + state.analyzed + '|' + state.riskOnly + '|' + state.checkedMonths;
     var only = state.riskOnly ? C.SCORE_MIN + '점 이상만 표시 중 · ' : '';
     if (key === legendKey) return;
     legendKey = key;
+    var key2 = key + '|' + state.checkedMonths;
     var lv = C.LEVELS.map(function (l) { return '<span class="lg"><i class="sw" style="background:' + C.COLORS[l.key] + '"></i>' + l.label + '</span>'; }).join('');
-    var html = '<b>범례</b><span class="lg"><i class="lg-check">✓</i> 현장 확인됨</span>';
+    /* "현장 확인됨" 은 누르면 기간을 고른다 (최근 3개월 / 1년 / 전체 / 끄기) */
+    var html = '<b>범례</b><span class="lg lg-chk" id="lgCheck" title="현장 확인 표시 기간"><i class="lg-check">✓</i> 현장 확인됨 <small>· ' + CHECK_LABEL[state.checkedMonths] + ' ▾</small>'
+      + '<span class="lg-menu" id="chkMenu">' + [3, 12, 0, -1].map(function (m) { return '<button type="button" data-m="' + m + '" class="' + (m === state.checkedMonths ? 'on' : '') + '">' + CHECK_LABEL[m] + '</button>'; }).join('') + '</span></span>';
     if (mode === 'gu') {
-      html += '<span class="lg lg-mode">구 단위 · 구 라벨의 숫자 = ' + C.SCORE_MIN + '점 이상 건물 수 · 확대하면 묶음</span>';
+      html += '<span class="lg lg-mode">구 단위 · 구 라벨 = ' + C.SCORE_MIN + '점 이상 · 현장 확인 건수 · 확대하면 묶음</span>';
     } else if (mode === 'cluster') {
       var sample = MapMarker.svgUri(MapMarker.clusterSvg({ size: 10, hist: [2, 3, 2, 3] }));
       html += lv + '<span class="lg"><img src="' + sample + '" width="22" height="22" alt=""> 숫자 = 건물 수 · 테두리 = 점수 구간 비율</span>'
         + '<span class="lg"><span class="lg-badge">N</span>' + C.SCORE_MIN + '점 이상</span>'
+        + '<span class="lg"><span class="lg-badge blue">✓N</span>현장 확인</span>'
         + '<span class="lg lg-mode">' + only + '묶음을 누르면 확대</span>';
     } else {
-      html += lv + '<span class="lg lg-mode">' + only + '건물 단위 · 점수 높은 순 최대 ' + Common.num(C.BUILDING_LIMIT) + '동</span>';
+      html += lv + '<span class="lg"><i class="lg-dot"></i> 점 = 핀 ' + C.PIN_ICON_MAX + '개 밖의 건물</span>'
+        + '<span class="lg"><span class="lg-badge blue">✓</span>핀의 체크 = 현장 확인됨</span>'
+        + '<span class="lg lg-mode">' + only + '건물 단위 · 점수 높은 순 핀 ' + C.PIN_ICON_MAX + '개</span>';
     }
     $('#legend').html(html);
   }
 
   if (live()) {
     naver.maps.Event.addListener(map, 'zoom_changed', onLevelChanged);
-    naver.maps.Event.addListener(map, 'idle', scheduleLoad);
+    naver.maps.Event.addListener(map, 'idle', function () { scheduleLoad(); onMoved(); });
   }
 
-  /* "분석 실행" : 기준값 확정 → 구 요약 · 지도 · 결과 리스트 */
+  /* "분석 실행" : 이때 조건을 확정 → 구 요약 · 도넛/핀 · 결과 리스트를 한 번에 다시. 이후 지도 이동 · 재검색 · 보관함 저장은 모두 이 조건 */
   function runAnalysis(c) {
     state.analyzed = true;
     state.criteria = c;
     state.cellByLevel = {};
     $('#panelRight').addClass('open');
     $('#detailView').hide(); $('#resultView').show();
+    $('#btnRefetch').removeClass('show');
     resize();
     loadGus();
     loadPoints();
     legendKey = null; renderLegend(modeOf(zoomNow()));
+    renderScope();
     MapResult.load(true);
   }
 
@@ -187,25 +286,66 @@ $(function () {
 
   function resize() { if (live()) naver.maps.Event.trigger(map, 'resize'); }
 
-  /* ---------- 상단 : 구 · 동 · 검색 · 칩 ---------- */
-  var DONGS = window.DONG_LIST || [];   // map.jsp 가 서버 목록을 넣어 준다
-  function fillDongs() {
-    var $d = $('#selDong').empty().append('<option value="">전체 동</option>');
-    DONGS.filter(function (x) { return !state.gu || x.sggCd === state.gu; })
-      .forEach(function (x) { $d.append('<option value="' + Common.esc(x.emdNm) + '">' + Common.esc(x.emdNm) + '</option>'); });
+  /* ---------- 상단 : 구 · 동(법정동 → 행정동 2단계) · 검색 · 칩 ---------- */
+  var esc = Common.esc;
+  var DONGS = [];   // api/map/dongs.do : [{sggCd, emdNm, cnt, bbox, adms:[{admNm, cnt, bbox}]}]
+  function loadDongs() {
+    MapApi.dongs({ gu: state.gu }).done(function (list) { DONGS = list; renderDongMenu(); });
   }
-  $('#selGu').on('change', function () {
-    state.gu = this.value; state.dong = '';
-    fillDongs();
-    var g = C.GU.filter(function (x) { return x.code === state.gu; })[0];
-    flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.CLUSTER_MIN : C.ZOOM.INIT);
+  function dongOf(sggCd, emdNm) { return DONGS.filter(function (x) { return x.emdNm === emdNm && x.sggCd === sggCd; })[0]; }
+  function dongLabel() { return state.dong ? state.dong + (state.adm ? ' · ' + state.adm : '') : '전체 동'; }
+  function renderDongMenu() {
+    var $e = $('#dmEmd').empty();
+    $e.append('<div class="dm-row dm-all' + (!state.dong ? ' sel' : '') + '" data-sgg="" data-emd="">전체 동</div>');
+    DONGS.forEach(function (d) {
+      var g = guOf(d.sggCd);
+      $e.append('<div class="dm-row' + (d.sggCd === state.gu && d.emdNm === state.dong ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '">'
+        + '<span>' + esc(d.emdNm) + (!state.gu && g ? ' <small>' + esc(g.name) + '</small>' : '') + '</span>' + (d.adms.length ? '<i>›</i>' : '') + '</div>');
+    });
+    $('#dmAdm').hide();
+    $('#dongBtn span').text(dongLabel());
+  }
+  /* 법정동 줄에 올리면 오른쪽에 그 행정동 목록. data-sgg 는 .data() 가 숫자로 바꾸므로 attr 로 읽는다 */
+  function showAdm($row) {
+    var d = dongOf($row.attr('data-sgg'), $row.attr('data-emd')), $a = $('#dmAdm').empty();
+    $('#dmEmd .dm-row').removeClass('hover'); $row.addClass('hover');
+    if (!d || !d.adms.length) { $a.hide(); return; }
+    var whole = d.sggCd === state.gu && d.emdNm === state.dong;
+    $a.append('<div class="dm-row dm-all' + (whole && !state.adm ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '" data-adm="">' + esc(d.emdNm) + ' 전체 <small>' + Common.num(d.cnt) + '</small></div>');
+    d.adms.forEach(function (a) {
+      $a.append('<div class="dm-row' + (whole && a.admNm === state.adm ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '" data-adm="' + esc(a.admNm) + '"><span>' + esc(a.admNm) + '</span><small>' + Common.num(a.cnt) + '</small></div>');
+    });
+    $a.css('top', Math.max(0, $row.position().top)).show();
+  }
+  function selectDong(sggCd, emdNm, admNm) {
+    var guChanged = sggCd && sggCd !== state.gu;
+    if (guChanged) { state.gu = sggCd; $('#selGu').val(sggCd); }   // "전체 구" 에서 동을 고르면 그 구로
+    state.dong = emdNm || ''; state.adm = admNm || '';
+    state.bbox = null;                                             // 동을 다시 고르면 재검색 범위는 풀린다
+    $('#btnRefetch').removeClass('show');
+    $('#dongDd').removeClass('open');
+    var d = dongOf(state.gu, state.dong);
+    var box = d ? (state.adm ? (d.adms.filter(function (a) { return a.admNm === state.adm; })[0] || d).bbox : d.bbox) : null;
+    if (box) fitTo(box);
+    else { var g = guOf(state.gu); flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.GU : C.ZOOM.INIT); }
+    if (guChanged) loadDongs(); else renderDongMenu();
+    renderScope();
     loadChecked();
     if (state.analyzed) MapResult.load(true);
-  });
-  $('#selDong').on('change', function () {
-    state.dong = this.value;
-    var d = DONGS.filter(function (x) { return x.emdNm === state.dong && (!state.gu || x.sggCd === state.gu); })[0];
-    if (d) flyTo(d.lat, d.lng, C.ZOOM.DONG);
+  }
+  $('#dongBtn').on('click', function (e) { e.stopPropagation(); $('#dongDd').toggleClass('open'); if ($('#dongDd').hasClass('open')) $('#dmAdm').hide(); });
+  $('#dmEmd').on('mouseenter', '.dm-row', function () { showAdm($(this)); });
+  $('#dmEmd').on('click', '.dm-row', function () { var $r = $(this); selectDong($r.attr('data-sgg'), $r.attr('data-emd'), ''); });
+  $('#dmAdm').on('click', '.dm-row', function () { var $r = $(this); selectDong($r.attr('data-sgg'), $r.attr('data-emd'), $r.attr('data-adm')); });
+  $(document).on('click', function (e) { if (!$(e.target).closest('#dongDd').length) $('#dongDd').removeClass('open'); });
+
+  $('#selGu').on('change', function () {
+    state.gu = this.value; state.dong = ''; state.adm = ''; state.bbox = null;
+    $('#btnRefetch').removeClass('show');
+    loadDongs();
+    var g = guOf(state.gu);
+    flyTo(g ? g.lat : C.CENTER.lat, g ? g.lng : C.CENTER.lng, g ? C.ZOOM.GU : C.ZOOM.INIT);
+    renderScope();
     loadChecked();
     if (state.analyzed) MapResult.load(true);
   });
@@ -223,9 +363,17 @@ $(function () {
   $('#zoomIn').on('click', function () { if (live()) map.setZoom(Math.min(C.ZOOM.MAX, map.getZoom() + 1), true); });
   $('#zoomOut').on('click', function () { if (live()) map.setZoom(Math.max(C.ZOOM.MIN, map.getZoom() - 1), true); });
 
-  /* ---------- 시작 : 구 경계(기본 기준) + 현장 확인됨 핀 ---------- */
-  fillDongs();
+  /* ---------- 시작 : 동 목록 + 구 경계(기본 기준) + 현장 확인됨 핀 ---------- */
+  loadDongs();
+  renderScope();
   renderLegend(modeOf(zoomNow()));
   loadGus();
   loadChecked();
+  /* 05 [지도에서 보기] (map.do?bldId=) : 그 건물로 가서 상세 패널을 연다 */
+  if (window.OPEN_BLD) {
+    MapApi.building($.extend({}, criteria(), { bldId: window.OPEN_BLD })).done(function (d) {
+      if (d && d.building) selectBuilding(d.building, true);
+      else Common.toast('건물을 찾을 수 없습니다.');
+    });
+  }
 });

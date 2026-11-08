@@ -32,7 +32,7 @@ public class MapperSmokeTest {
 			long t0 = System.currentTimeMillis();
 			System.out.println("member 2026001 = " + mdao.getMemberByLoginId("admin"));
 
-			List<DongTO> dongs = bdao.getDongList();
+			List<DongTO> dongs = bdao.getDongList(null);
 			System.out.println("dongs = " + dongs.size() + " first=" + dongs.get(0));
 
 			AnalysisCriteriaTO c = new AnalysisCriteriaTO();

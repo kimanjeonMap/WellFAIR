@@ -8,20 +8,25 @@
 	     한 가구 = residency 1행 = household 1행 (hh_id). 카드의 residentId = hh_id
 	     ================================================================ -->
 
-	<!-- 옥탑층 거주자가 있는 건물 (mapper-building 의 점수 계산이 include) -->
-	<sql id="rooftopJoin">LEFT JOIN (SELECT DISTINCT bld_id FROM residency WHERE res_flr = '옥탑층') rt ON rt.bld_id = b.bld_id</sql>
+	<!-- 옥탑 판정은 bld_resident_stat.rooftop_hh_cnt (mapper-building.statJoin). residency 를 매번 훑지 않는다 -->
 
-	<!-- 개인 가점 (가구 단위, r = residency, h = household, a = arrears) -->
+	<!-- 가구 가점 (r = residency, h = household, a = arrears, x = 가구원 집계).
+	     04_update.sql [D] 의 계산과 같은 숫자여야 한다 (bld_resident_stat.priority_sum · vuln_hh_cnt 가 이 식으로 미리 계산됨) :
+	       고위험고립 30 · 사회적고립 15 · 75세 이상 15 · 심한 장애 15 · 사각지대 15
+	       건보료 체납 10 · 독박돌봄 10 · 지하·옥탑층 10 · 기초생활/차상위 5 · 기초연금 3.  취약 가구 = 10 이상 -->
 	<sql id="priorityExpr">(
 		  (CASE h.risk_grade WHEN '고위험고립' THEN 30 WHEN '사회적고립' THEN 15 ELSE 0 END)
 		+ (CASE WHEN x.old75_cnt   > 0 THEN 15 ELSE 0 END)
 		+ (CASE WHEN x.severe_cnt  > 0 THEN 15 ELSE 0 END)
-		+ (CASE WHEN h.basic_living_yn = 'Y' OR h.near_poor_yn = 'Y' THEN 10 ELSE 0 END)
-		+ (CASE WHEN x.pension_cnt > 0 THEN 5  ELSE 0 END)
+		+ (CASE WHEN h.blind_spot_yn = 'Y' THEN 15 ELSE 0 END)
 		+ (CASE WHEN a.nhis_arrears_yn = 'Y' THEN 10 ELSE 0 END)
 		+ (CASE WHEN h.care_burden_yn = 'Y' THEN 10 ELSE 0 END)
 		+ (CASE WHEN r.res_flr LIKE '지하%' OR r.res_flr = '옥탑층' THEN 10 ELSE 0 END)
+		+ (CASE WHEN h.basic_living_yn = 'Y' OR h.near_poor_yn = 'Y' THEN 5 ELSE 0 END)
+		+ (CASE WHEN x.pension_cnt > 0 THEN 3 ELSE 0 END)
 	)</sql>
+	<!-- 취약 가구 기준 (가점) -->
+	<sql id="vulnMin">10</sql>
 
 	<!-- 건물의 가구 목록 (집계·카드 공용) -->
 	<sql id="householdSelect">
@@ -41,7 +46,11 @@
 		     , h.near_poor_yn
 		     , h.basic_living_yn
 		     , h.care_burden_yn
+		     , h.blind_spot_yn
+		     , h.blind_spot_type
 		     , IFNULL(a.nhis_arrears_yn, 'N') arrears_yn
+		     , x.support_type
+		     , x.detect_result
 		     , <include refid="mapper-resident.priorityExpr"/> priority
 		  FROM residency r
 		  JOIN household h ON h.hh_id = r.hh_id
@@ -50,6 +59,8 @@
 		             , COUNT(CASE WHEN p.age >= 75 THEN 1 END) old75_cnt
 		             , COUNT(CASE WHEN p.dsbl_grade_nm = '심한 장애' THEN 1 END) severe_cnt
 		             , COUNT(CASE WHEN p.basic_pension_yn = 'Y' THEN 1 END) pension_cnt
+		             , GROUP_CONCAT(DISTINCT NULLIF(p.support_type, '')  ORDER BY p.support_type  SEPARATOR ' · ') support_type
+		             , GROUP_CONCAT(DISTINCT NULLIF(p.detect_result, '') ORDER BY p.detect_result SEPARATOR ' · ') detect_result
 		          FROM person p
 		          JOIN residency r2 ON r2.hh_id = p.hh_id AND r2.bld_id = #{bldId}
 		         GROUP BY p.hh_id) x ON x.hh_id = r.hh_id
@@ -70,10 +81,11 @@
 		     , IFNULL(SUM(y.pension_cnt), 0)                       pension_cnt
 		     , IFNULL(SUM(y.arrears_yn = 'Y'), 0)                  arrears_hh
 		     , IFNULL(SUM(y.care_burden_yn = 'Y'), 0)              care_burden_hh
+		     , IFNULL(SUM(y.blind_spot_yn = 'Y'), 0)               blind_hh
 		     , IFNULL(SUM(y.res_flr LIKE '지하%'), 0)              ugrnd_hh
 		     , IFNULL(SUM(y.res_flr = '옥탑층'), 0)                rooftop_hh
 		     , IFNULL(MAX(y.priority), 0)                          max_priority
-		     , IFNULL(SUM(y.priority > 0), 0)                      vuln_hh
+		     , IFNULL(SUM(y.priority >= <include refid="mapper-resident.vulnMin"/>), 0) vuln_hh
 		  FROM (<include refid="mapper-resident.householdSelect"/>) y
 	</select>
 

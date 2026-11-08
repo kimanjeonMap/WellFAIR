@@ -57,15 +57,16 @@ public class FieldController {
 		return "fieldedit";
 	}
 
-	// POST fieldedit.do : listId, title, factorIds(순서대로) → redirect:fielddetail.do
+	// POST fieldedit.do : listId, title, moveMode(walk/transit/car), factorIds(순서대로) → redirect:fielddetail.do
 	@PostMapping("fieldedit.do")
 	public String edit(@RequestParam(value = "listId", defaultValue = "0") long listId,
 			@RequestParam("title") String title,
+			@RequestParam(value = "moveMode", required = false) String moveMode,
 			@RequestParam(value = "factorIds", required = false) List<Long> factorIds,
 			HttpSession session, RedirectAttributes ra) {
 		long id;
 		try {
-			id = fieldService.saveField(userId(session), userGu(session), listId, title, factorIds);
+			id = fieldService.saveField(userId(session), userGu(session), listId, title, moveMode, factorIds);
 		} catch (IllegalArgumentException e) {                  // 한 리스트 = 한 구
 			ra.addFlashAttribute("msg", e.getMessage());
 			return "redirect:fieldedit.do?listId=" + listId;
@@ -102,7 +103,7 @@ public class FieldController {
 		FieldListTO field = fieldService.getFieldDetail(listId, userId(session), userGu(session));
 		if (field == null) return "redirect:fieldlist.do";
 		double km = FieldService.totalKm(field.getItems());
-		int walk = FieldService.minutes(km, FieldService.WALK_KMH);
+		int walk = FieldService.minutes(km, FieldService.speedOf(field.getMoveMode()));   // 저장된 이동수단 기준 (변수명은 그대로)
 		int check = field.getItems().size() * FieldService.CHECK_MIN_PER_BLD;
 		Object[] g = FieldService.guOffice(field.getItems().isEmpty() ? field.getSggCd() : field.getItems().get(0).getSggCd());
 		model.addAttribute("startName", g[0]);
@@ -110,7 +111,8 @@ public class FieldController {
 		model.addAttribute("startLng", g[2]);
 		model.addAttribute("field", field);
 		model.addAttribute("km", km);
-		model.addAttribute("walkMin", walk);
+		model.addAttribute("walkMin", FieldService.minutes(km, FieldService.WALK_KMH));
+		model.addAttribute("moveMin", walk);
 		model.addAttribute("carMin", FieldService.minutes(km, FieldService.CAR_KMH));
 		model.addAttribute("transitMin", FieldService.minutes(km, FieldService.TRANSIT_KMH));
 		model.addAttribute("checkMin", check);

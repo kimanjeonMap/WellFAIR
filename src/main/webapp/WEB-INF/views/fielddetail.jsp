@@ -30,16 +30,18 @@
     <div class="nmap" id="map"></div>
     <div class="card route-card">
       <div class="card-head"><h3>경로 · 소요시간</h3><small><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳 · 직선거리 × 1.3</small></div>
-      <div class="route-modes">
-        <div class="on">도보<b>${walkMin}<small>분</small></b></div>
-        <div>자동차<b>${carMin}<small>분</small></b></div>
-        <div>대중교통<b>${transitMin}<small>분</small></b></div>
+      <%-- 이동수단 : 저장된 move_mode 에 on. 세 칸 다 눌러서 바꿀 수 있고 바꾸면 api/field/mode.do 로 저장 + 아래 시간 다시 계산 (5-1) --%>
+      <c:set var="mm" value="${empty field.moveMode ? 'WALK' : field.moveMode}"/>
+      <div class="route-modes" id="routeModes">
+        <div data-mode="walk" class="${mm == 'WALK' ? 'on' : ''}" title="도보 4km/h">도보<b>${walkMin}<small>분</small></b></div>
+        <div data-mode="transit" class="${mm == 'TRANSIT' ? 'on' : ''}" title="대중교통 15km/h">대중교통<b>${transitMin}<small>분</small></b></div>
+        <div data-mode="car" class="${mm == 'CAR' ? 'on' : ''}" title="자동차 20km/h">자동차<b>${carMin}<small>분</small></b></div>
       </div>
       <div class="route-stats">
         <div>이동 거리<b>${km}km</b></div>
         <div>현장 확인 예상<b>${checkMin}분 <small>(${field.itemCnt}동 × 20분)</small></b></div>
-        <div>총 소요<b><c:out value="${totalText}"/></b></div>
-        <div>출발 → 예상 종료<b>09:30 → ${endTime}</b></div>
+        <div>총 소요<b id="rtTotal"><c:out value="${totalText}"/></b></div>
+        <div>출발 → 예상 종료<b id="rtEnd">09:30 → ${endTime}</b></div>
       </div>
     </div>
   </div>
@@ -53,10 +55,10 @@
       <c:forEach var="it" items="${field.items}" varStatus="s">
         <tr style="cursor:default">
           <td><span class="num ${it.checked ? 'done' : ''}">${it.checked ? '✓' : it.visitOrder}</span></td>
-          <td><div class="name"><c:out value="${it.title}"/></div><div class="addr"><c:out value="${it.addr}"/></div></td>
+          <td><div class="name"><a href="${ctx}/archivedetail.do?bldId=${it.bldId}" title="건물 확인 이력"><c:out value="${it.title}"/></a></div><div class="addr"><c:out value="${it.addr}"/></div></td>
           <td class="muted"><c:out value="${it.buildingInfo}"/></td>
           <td><c:forEach var="f" items="${fn:split(it.factorText, '·')}"><span class="tag"><c:out value="${fn:trim(f)}"/></span></c:forEach></td>
-          <td><c:choose><c:when test="${s.first}"><c:out value="${startName}"/>에서 ${it.legMin}분 <span class="muted">(${it.legKm}km)</span></c:when><c:otherwise>이전 지점에서 ${it.legMin}분 <span class="muted">(${it.legKm}km)</span></c:otherwise></c:choose></td>
+          <td><c:choose><c:when test="${s.first}"><c:out value="${startName}"/>에서 </c:when><c:otherwise>이전 지점에서 </c:otherwise></c:choose><span class="leg-min" data-km="${it.legKm}">${it.legMin}</span>분 <span class="muted">(${it.legKm}km)</span></td>
           <td><c:out value="${empty it.welfNm ? '-' : it.welfNm}"/> <span class="muted"><fmt:formatNumber value="${it.welfDist / 1000}" maxFractionDigits="1"/>km</span></td>
           <td>
             <c:choose>
@@ -81,6 +83,7 @@
 <script>
   window.navermap_authFailure = function () { document.getElementById('map').innerHTML = '<div class="map-error"><b>네이버 지도 인증 실패</b></div>'; };
   window.FD_START = { name: '<c:out value="${startName}"/>', lat: ${startLat}, lng: ${startLng} };
+  window.FD_ROUTE = { listId: ${field.surveyId}, km: ${km}, checkMin: ${checkMin}, mode: '${fn:toLowerCase(mm)}' };
   window.FD_ITEMS = [<c:forEach var="it" items="${field.items}" varStatus="s">{ title: '<c:out value="${it.title}"/>', lat: ${it.lat}, lng: ${it.lng}, order: ${it.visitOrder == null ? s.index + 1 : it.visitOrder}, checked: ${it.checked} }<c:if test="${!s.last}">,</c:if></c:forEach>];
 </script>
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=<c:out value='${naverClientId}'/>"></script>

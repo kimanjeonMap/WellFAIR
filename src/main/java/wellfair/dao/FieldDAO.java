@@ -44,6 +44,12 @@ public class FieldDAO {
 		return session.update("mapper-field.updateField", to);
 	}
 
+	public int updateMoveMode(long surveyId, long userId, String moveMode) {
+		Map<String, Object> p = new HashMap<>();
+		p.put("surveyId", surveyId); p.put("userId", userId); p.put("moveMode", moveMode);
+		return session.update("mapper-field.updateMoveMode", p);
+	}
+
 	public List<FieldItemTO> getFieldItemList(long surveyId) {
 		return session.selectList("mapper-field.getFieldItemList", surveyId);
 	}

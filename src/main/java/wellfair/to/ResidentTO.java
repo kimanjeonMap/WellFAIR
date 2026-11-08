@@ -28,6 +28,11 @@ public class ResidentTO {
 	private String basicLivingYn;
 	private String careBurdenYn;
 	private String arrearsYn;
+	private String blindSpotYn;   // 사각지대 (복지 체계 밖, +15)
+	private String blindSpotType;
 	private int priority;         // 거주자 우선 점수 (mapper-resident priorityExpr)
-	private List<String> tags = new ArrayList<>();   // 카드에 붙는 가점 태그
+	private String supportType;   // 가구원 지원연계 (공적급여 · 민간자원 · 기타서비스, 여러 개면 ' · ' 로)  → 모달 "복지 연계" 원본 값
+	private String detectResult;  // 가구원 처리결과 (조치완료 · 단순상담 · 미처리 …)                       → 지원연계 없을 때 그대로
+	private List<String> tags = new ArrayList<>();      // 취약 유형 태그 (가점 요인)
+	private List<String> benefits = new ArrayList<>();  // 수급 확인용 태그 (기초생활 · 차상위 · 기초연금) : 취약 유형 칸에 점선으로
 }

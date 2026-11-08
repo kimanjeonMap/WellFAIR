@@ -12,7 +12,7 @@ window.FieldMap = (function () {
     '11560': { name: '영등포구청', lat: 37.5264, lng: 126.8962 }
   };
   var ROAD_FACTOR = 1.3;
-  var SPEED = { walk: 4, transit: 12, car: 20 };   // km/h
+  var SPEED = { walk: 4, transit: 15, car: 20 };   // km/h (FieldService 와 같은 값)
 
   function haversineKm(a, b) {
     var R = 6371.0088, toRad = Math.PI / 180;

@@ -3,7 +3,6 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <c:set var="pageTitle" value="보관함"/>
 <c:set var="pageCss" value="pages"/>
-<c:set var="pageCss2" value="map"/>
 <c:set var="activeMenu" value="archive"/>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <!DOCTYPE html>
@@ -16,12 +15,13 @@
   <div class="page-head"><h1>보관함</h1></div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
 
-  <%-- 탭 (상태는 statusExpr 로 계산) --%>
-  <c:set var="st" value="${empty criteria.status ? 'TODO' : criteria.status}"/>
+  <%-- 탭 : 전체 / 신규 / 진행중 / 완료됨 (상태는 statusExpr 로 계산). 링크에 filterQs 를 붙여 상세 필터를 유지 --%>
+  <c:set var="st" value="${empty criteria.status ? '' : criteria.status}"/>
   <div class="tabs">
-    <a href="${ctx}/archive.do?status=TODO&gu=${criteria.gu}&dong=${criteria.dong}&sort=${criteria.sort}" class="${st == 'TODO' ? 'active' : ''}">신규 <b>${statusCount.todo}</b></a>
-    <a href="${ctx}/archive.do?status=DOING&gu=${criteria.gu}&dong=${criteria.dong}&sort=${criteria.sort}" class="${st == 'DOING' ? 'active' : ''}">진행중 <b>${statusCount.doing}</b></a>
-    <a href="${ctx}/archive.do?status=DONE&gu=${criteria.gu}&dong=${criteria.dong}&sort=${criteria.sort}" class="${st == 'DONE' ? 'active' : ''}">완료됨 <b>${statusCount.done}</b></a>
+    <a href="${ctx}/archive.do?status=&${filterQs}" class="${empty st ? 'active' : ''}">전체 <b>${statusCount.todo + statusCount.doing + statusCount.done}</b></a>
+    <a href="${ctx}/archive.do?status=TODO&${filterQs}" class="${st == 'TODO' ? 'active' : ''}">신규 <b>${statusCount.todo}</b></a>
+    <a href="${ctx}/archive.do?status=DOING&${filterQs}" class="${st == 'DOING' ? 'active' : ''}">진행중 <b>${statusCount.doing}</b></a>
+    <a href="${ctx}/archive.do?status=DONE&${filterQs}" class="${st == 'DONE' ? 'active' : ''}">완료됨 <b>${statusCount.done}</b></a>
   </div>
 
   <%-- 필터 (구청 계정은 구 선택칸이 소속 구로 잠김 : ArchiveController 가 gu 를 강제) --%>
@@ -43,7 +43,18 @@
         </c:if>
       </c:forEach>
     </select>
+    <%-- 행정동 (법정동을 고르면 그 아래 행정동, 5-1 동 선택 2단계) --%>
+    <select class="field" name="adm" id="selAdm" ${empty criteria.dong ? 'disabled' : ''}>
+      <option value="">전체 행정동</option>
+      <c:forEach var="d" items="${dongTree}">
+        <c:if test="${d.emdNm == criteria.dong and (empty criteria.gu or d.sggCd == criteria.gu)}">
+          <c:forEach var="a" items="${d.adms}"><option value="<c:out value='${a.admNm}'/>" ${a.admNm == criteria.adm ? 'selected' : ''}><c:out value="${a.admNm}"/> (${a.cnt})</option></c:forEach>
+        </c:if>
+      </c:forEach>
+    </select>
     <select class="field" disabled><option>시나리오: 평시</option></select>
+    <button type="button" class="btn btn-line btn-sm ${criteria.fopen ? 'on' : ''}" id="btnFilter">상세 필터<c:if test="${criteria.filterCount > 0}"> <b class="fcnt">${criteria.filterCount}</b></c:if> ▾</button>
+    <input type="hidden" name="fopen" id="fopen" value="${criteria.fopen}">
     <span class="spacer"></span>
     <div class="seg" id="sortSeg">
       <button type="button" data-sort="score" class="${criteria.sort == 'score' or empty criteria.sort ? 'on' : ''}">취약도 높은 순</button>
@@ -53,6 +64,56 @@
     <div class="search-wrap">
       <input class="field" name="q" value="<c:out value='${criteria.q}'/>" placeholder="건물명, 주소 검색">
       <button type="submit" title="검색">⌕</button>
+    </div>
+
+    <%-- [상세 필터] 펼침칸 (5-1). 값은 GET 파라미터로 가고 mapper-archive.archiveRows 의 <if> 가 거른다 --%>
+    <div class="filter-detail" id="filterDetail" style="${criteria.fopen ? '' : 'display:none'}">
+      <div class="fd-row"><span class="fd-label">취약 요인</span>
+        <div class="fd-opts">
+          <c:forEach var="f" items="${factorOpts}">
+            <label class="chk"><input type="checkbox" name="factors" value="${f.key}" ${fn:contains(factorsSel, ','.concat(f.key).concat(',')) ? 'checked' : ''}> <c:out value="${f.value}"/></label>
+          </c:forEach>
+          <span class="fd-mode">
+            <label class="chk"><input type="radio" name="factorMode" value="all" ${criteria.factorMode != 'any' ? 'checked' : ''}> 모두 가진 건물</label>
+            <label class="chk"><input type="radio" name="factorMode" value="any" ${criteria.factorMode == 'any' ? 'checked' : ''}> 하나라도</label>
+          </span>
+        </div></div>
+      <div class="fd-row"><span class="fd-label">점수 구간</span>
+        <div class="fd-opts">
+          <label class="chk"><input type="checkbox" name="bands" value="80" ${fn:contains(bandsSel, ',80,') ? 'checked' : ''}> 80점 이상</label>
+          <label class="chk"><input type="checkbox" name="bands" value="60" ${fn:contains(bandsSel, ',60,') ? 'checked' : ''}> 60~79점</label>
+          <label class="chk"><input type="checkbox" name="bands" value="40" ${fn:contains(bandsSel, ',40,') ? 'checked' : ''}> 40~59점</label>
+          <span class="muted">(저장 당시 점수)</span>
+        </div></div>
+      <div class="fd-row"><span class="fd-label">건물 용도</span>
+        <div class="fd-opts">
+          <select class="field" name="use"><option value="">전체 용도</option>
+            <c:forEach var="u" items="${useList}"><option value="<c:out value='${u}'/>" ${u == criteria.use ? 'selected' : ''}><c:out value="${u}"/></option></c:forEach>
+          </select>
+          <span class="muted">법정동 · 행정동은 위 선택칸에서</span>
+        </div></div>
+      <div class="fd-row"><span class="fd-label">거주자 조건</span>
+        <div class="fd-opts">
+          <label class="chk"><input type="checkbox" name="resHigh" value="true" ${criteria.resHigh ? 'checked' : ''}> 고위험고립 있음</label>
+          <label class="chk"><input type="checkbox" name="resOld75" value="true" ${criteria.resOld75 ? 'checked' : ''}> 75세 이상 있음</label>
+          <label class="chk"><input type="checkbox" name="resSevere" value="true" ${criteria.resSevere ? 'checked' : ''}> 심한 장애 있음</label>
+          <span class="muted">(건물별 요약으로 거름 · 사람 정보는 보이지 않음)</span>
+        </div></div>
+      <div class="fd-row"><span class="fd-label">방문 결과</span>
+        <div class="fd-opts">
+          <label class="chk"><input type="checkbox" name="visits" value="MET" ${fn:contains(visitsSel, ',MET,') ? 'checked' : ''}> 만남</label>
+          <label class="chk"><input type="checkbox" name="visits" value="ABSENT" ${fn:contains(visitsSel, ',ABSENT,') ? 'checked' : ''}> 부재</label>
+          <label class="chk"><input type="checkbox" name="visits" value="REFUSED" ${fn:contains(visitsSel, ',REFUSED,') ? 'checked' : ''}> 거부</label>
+        </div></div>
+      <div class="fd-row"><span class="fd-label">저장일</span>
+        <div class="fd-opts">
+          <input type="date" class="field" name="savedFrom" value="<c:out value='${criteria.savedFrom}'/>"> <span class="muted">~</span>
+          <input type="date" class="field" name="savedTo" value="<c:out value='${criteria.savedTo}'/>">
+        </div></div>
+      <div class="fd-foot">
+        <a class="btn btn-line btn-sm" href="${ctx}/archive.do?status=${st}&gu=${criteria.gu}&sort=${criteria.sort}">초기화</a>
+        <button type="submit" class="btn btn-primary btn-sm">필터 적용</button>
+      </div>
     </div>
   </form>
 
@@ -80,12 +141,13 @@
       <th style="width:90px">상태</th><th style="width:110px">저장일</th><th style="width:90px"></th>
     </tr></thead>
     <tbody>
+    <%-- 행 클릭 → archivedetail.do?bldId= (05 건물 확인 이력) --%>
     <c:forEach var="r" items="${page.list}">
       <c:set var="shortAddr" value="${fn:replace(fn:replace(r.addr, '서울특별시 ', ''), ' ', ' ')}"/>
-      <tr data-id="${r.bldId}" data-factor="${r.factorId}" data-lat="${r.lat}" data-lng="${r.lng}">
+      <tr data-id="${r.bldId}" data-factor="${r.factorId}" title="클릭하면 건물 확인 이력으로">
         <td><input type="checkbox" class="rowChk" value="${r.factorId}"></td>
         <td><div class="name"><c:out value="${fn:substringAfter(shortAddr, '구 ')}"/> <c:out value="${empty r.bldNm ? r.useNm : r.bldNm}"/></div><div class="addr"><c:out value="${r.addr}"/></div></td>
-        <td><c:out value="${empty r.factorText ? '-' : r.factorText}"/></td>
+        <td><c:out value="${empty r.factorText ? '-' : r.factorText}"/><c:if test="${r.vulnHhCnt > 0}"> <small class="muted">· 취약 가구 ${r.vulnHhCnt}</small></c:if></td>
         <td><span class="score-bar"><i><b style="width:${r.score}%"></b></i><span>${r.score}</span></span></td>
         <td>${r.priorityRank}위</td>
         <td><span class="badge ${fn:toLowerCase(r.status)}"><c:out value="${r.statusLabel}"/></span></td>
@@ -112,7 +174,7 @@
   <c:if test="${page.totalPages > 1}">
     <div class="pager">
       <c:forEach var="p" begin="1" end="${page.totalPages}">
-        <a href="${ctx}/archive.do?status=${st}&gu=${criteria.gu}&dong=${criteria.dong}&sort=${criteria.sort}&q=${criteria.q}&page=${p}" class="${p == page.page ? 'on' : ''}">${p}</a>
+        <a href="${ctx}/archive.do?status=${st}&page=${p}&${filterQs}" class="${p == page.page ? 'on' : ''}">${p}</a>
       </c:forEach>
     </div>
   </c:if>
@@ -122,16 +184,7 @@
 <form id="addItemsForm" method="post" action="${ctx}/fieldadditems.do" style="display:none"><input type="hidden" name="listId" id="addListId"><div id="addIds"></div></form>
 <form id="deleteForm" method="post" action="${ctx}/archivedelete.do" style="display:none"><div id="delIds"></div></form>
 
-<%-- 행 클릭 상세 : 지도의 건물 상세 패널(building-panel.jspf) 공용 --%>
-<aside class="right-panel archive-panel" id="panelRight">
-  <div class="rp-view" id="detailView" style="display:none">
-    <%@ include file="/WEB-INF/views/include/building-panel.jspf" %>
-  </div>
-</aside>
-
 <script src="${ctx}/resources/js/common.js"></script>
-<script src="${ctx}/resources/js/map/map-api.js"></script>
-<script src="${ctx}/resources/js/map/map-panel.js"></script>
 <script src="${ctx}/resources/js/archive.js"></script>
 </body>
 </html>

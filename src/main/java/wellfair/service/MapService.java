@@ -44,9 +44,21 @@ public class MapService {
 
 	private Map<String, List<double[]>> ringCache;   // sgg_cd → 볼록 껍질 [[lng,lat],...] (한 번 계산)
 
-	// 구·동 선택 목록
+	// 법정동 목록 (보관함 필터 등)
 	public List<DongTO> getDongList() {
-		return dao.getDongList();
+		return dao.getDongList(null);
+	}
+
+	/** 동 선택 2단계 (5-1) : 법정동 줄마다 행정동 목록(adms)을 단다. gu 가 없으면 3개 구 전체 */
+	public List<DongTO> getDongTree(String gu) {
+		List<DongTO> emds = dao.getDongList(gu);
+		Map<String, DongTO> byKey = new HashMap<>();
+		for (DongTO e : emds) byKey.put(e.getSggCd() + "|" + e.getEmdNm(), e);
+		for (DongTO a : dao.getAdmList(gu)) {
+			DongTO e = byKey.get(a.getSggCd() + "|" + a.getEmdNm());
+			if (e != null) e.getAdms().add(a);
+		}
+		return emds;
 	}
 
 	/** 구 단위 (zoom 14 이하) : 경계 + "위험 N곳". 경계는 building 좌표의 볼록 껍질 */
@@ -106,8 +118,9 @@ public class MapService {
 		return dao.getCheckedList(c);
 	}
 
-	// 오른쪽 결과 리스트
+	// 오른쪽 결과 리스트. 범위 = gu/dong/adm (기본 구 전체) 또는 bbox ("지도 화면 안", [이 지역에서 재검색])
 	public PageTO<BuildingTO> getResultPage(AnalysisCriteriaTO c) {
+		c.applyBbox();
 		if (c.getSize() <= 0 || c.getSize() > 100) c.setSize(20);
 		int total = dao.getResultCount(c);
 		List<BuildingTO> list = dao.getResultList(c);
@@ -128,30 +141,46 @@ public class MapService {
 		return d;
 	}
 
-	/** 점수 구성 (요인별 점수는 SQL 이 계산, 여기서는 라벨·근거만 붙인다) */
+	/** 점수 구성 = 위험 유형 4묶음 (10단계 규칙). 주거 공간 · 경제 여건 = 하나라도 맞으면 전부, 건물 상태 · 침수 위험 = 맞은 수 ÷ 켜진 수 */
 	private List<ScoreItemTO> buildScoreItems(BuildingTO b, AnalysisCriteriaTO c) {
 		List<ScoreItemTO> items = new ArrayList<>();
-		items.add(item("ugrnd", "지하층 (지하 거주 등록)", b.getPtUgrnd(), c.getUgrndW(), c.isUgrndOn(),
-				b.getUgrndRes() == 1 ? "지하층 거주 등록 건물" : "지하 거주 없음"));
-		items.add(item("gosiwon", "고시원 (다중생활시설)", b.getPtGosiwon(), c.getGosiwonW(), c.isGosiwonOn(),
-				"고시원".equals(b.getSpType()) ? "특수 유형 : 고시원" + (b.getSpNm() == null ? "" : " · " + b.getSpNm()) : "해당 없음"));
-		items.add(item("rooftop", "옥탑 (옥탑층 거주자)", b.getPtRooftop(), c.getRooftopW(), c.isRooftopOn(),
-				b.getPtRooftop() > 0 ? "옥탑층 거주 가구 있음" : "옥탑층 거주 없음"));
-		items.add(item("viol", "위반건축물", b.getPtViol(), c.getViolW(), c.isViolOn(),
-				"1".equals(b.getViolYn()) ? "건축물대장 위반건축물 등재" : b.getViolYn() == null ? "대장 미연계" : "해당 없음"));
-		items.add(item("old", "노후 (준공 " + c.getOldYears() + "년+)", b.getPtOld(), c.getOldW(), c.isOldOn(),
-				b.getBldAge() == null ? "사용승인일 자료 없음" : b.getUseaprDay().substring(0, 4) + "년 준공, " + b.getBldAge() + "년 경과"));
-		items.add(item("flood", "침수흔적 (" + c.getFloodCnt() + "회 이상)", b.getPtFlood(), c.getFloodW(), c.isFloodOn(),
-				"침수흔적 중첩 " + b.getFloodCnt() + "회" + (b.getFloodDepth() > 0 ? " · 깊이 " + b.getFloodDepth() + "m" : "")));
-		items.add(item("low", "저지대 (" + fmt(c.getLowElev()) + "m 이하)", b.getPtLow(), c.getLowW(), c.isLowOn(),
-				"해발 " + b.getElevM() + "m · 경사 " + b.getSlopeDeg() + "°"));
-		items.add(item("cheap", "저가 월세 밀집 (" + fmt(c.getCheapPct()) + "% 이하)", b.getPtCheap(), c.getCheapW(), c.isCheapOn(),
-				b.getPricePct() == null ? "공시가격 자료 없음" : "가격 백분위 " + b.getPricePct() + "%"));
+		items.add(anyGroup("space", "주거 공간", c.getSpaceW(),
+				new Object[][] { { "반지하", b.getPtUgrnd(), c.isUgrndOn() }, { "옥탑", b.getPtRooftop(), c.isRooftopOn() }, { "고시원", b.getPtGosiwon(), c.isGosiwonOn() } }));
+		items.add(ratioGroup("bld", "건물 상태", c.getBldW(),
+				new Object[][] { { "노후 " + c.getOldYears() + "년+" + (b.getBldAge() != null ? " (" + b.getBldAge() + "년 경과)" : ""), b.getPtOld(), c.isOldOn() }, { "위반건축물", b.getPtViol(), c.isViolOn() } }));
+		items.add(ratioGroup("flood", "침수 위험", c.getFloodW(),
+				new Object[][] { { "침수 " + b.getFloodCnt() + "회", b.getPtFlood(), c.isFloodOn() }, { "저지대 해발 " + b.getElevM() + "m", b.getPtLow(), c.isLowOn() } }));
+		items.add(anyGroup("econ", "경제 여건", c.getEconW(),
+				new Object[][] { { "저가 주택" + (b.getPricePct() != null ? " (백분위 " + b.getPricePct() + "%)" : ""), b.getPtCheap(), c.isCheapOn() } }));
 		return items;
 	}
 
-	private static ScoreItemTO item(String key, String label, int points, int weight, boolean on, String desc) {
-		return new ScoreItemTO(key, label, points, on ? weight : 0, points > 0, on ? desc : "분석 조건에서 제외");
+	/** 하나라도 맞으면 묶음 가중치 전부. members = { 요인 이름, 요인 점수(맞으면 > 0), 켜짐 } */
+	private static ScoreItemTO anyGroup(String key, String label, int weight, Object[][] members) {
+		List<String> hits = new ArrayList<>();
+		boolean anyOn = false;
+		for (Object[] m : members) {
+			anyOn |= (Boolean) m[2];
+			if ((Boolean) m[2] && (Integer) m[1] > 0) hits.add((String) m[0]);
+		}
+		int points = hits.isEmpty() ? 0 : weight;
+		String desc = !anyOn ? "분석 조건에서 제외" : hits.isEmpty() ? "해당 없음" : String.join(" · ", hits);
+		return new ScoreItemTO(key, label, points, anyOn ? weight : 0, points > 0, desc);
+	}
+
+	/** 묶음 가중치 × (맞은 요인 수 ÷ 켜진 요인 수). "노후 · 2개 중 1개" */
+	private static ScoreItemTO ratioGroup(String key, String label, int weight, Object[][] members) {
+		List<String> hits = new ArrayList<>();
+		int on = 0;
+		for (Object[] m : members) {
+			if (!(Boolean) m[2]) continue;
+			on++;
+			if ((Integer) m[1] > 0) hits.add((String) m[0]);
+		}
+		int points = on == 0 ? 0 : (int) Math.round(weight * (double) hits.size() / on);
+		String desc = on == 0 ? "분석 조건에서 제외"
+				: (hits.isEmpty() ? "해당 없음" : String.join(" · ", hits)) + " · " + on + "개 중 " + hits.size() + "개";
+		return new ScoreItemTO(key, label, points, on == 0 ? 0 : weight, points > 0, desc);
 	}
 
 	private static String fmt(double v) {

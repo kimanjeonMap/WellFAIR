@@ -50,12 +50,19 @@
 	</select>
 
 	<insert id="addField" parameterType="wellfair.to.FieldListTO" useGeneratedKeys="true" keyProperty="surveyId">
-		INSERT INTO survey_list (user_id, sgg_cd, title) VALUES (#{userId}, #{sggCd}, #{title})
+		INSERT INTO survey_list (user_id, sgg_cd, title, move_mode) VALUES (#{userId}, #{sggCd}, #{title}, IFNULL(#{moveMode}, 'WALK'))
 	</insert>
 
-	<!-- 제목 수정. 구가 아직 없던 옛 리스트는 이번에 정해진 구를 채운다 -->
+	<!-- 제목 · 이동수단 수정. 구가 아직 없던 옛 리스트는 이번에 정해진 구를 채운다 -->
 	<update id="updateField" parameterType="wellfair.to.FieldListTO">
-		UPDATE survey_list SET title = #{title}, sgg_cd = IFNULL(sgg_cd, #{sggCd}) WHERE survey_id = #{surveyId} AND user_id = #{userId}
+		UPDATE survey_list
+		   SET title = #{title}, sgg_cd = IFNULL(sgg_cd, #{sggCd}), move_mode = IFNULL(#{moveMode}, move_mode)
+		 WHERE survey_id = #{surveyId} AND user_id = #{userId}
+	</update>
+
+	<!-- 03-2 소요시간 카드에서 이동수단만 바꿀 때 -->
+	<update id="updateMoveMode">
+		UPDATE survey_list SET move_mode = #{moveMode} WHERE survey_id = #{surveyId} AND user_id = #{userId}
 	</update>
 
 	<!-- 리스트 항목 (방문 순서대로) -->
@@ -101,16 +108,19 @@
 	<!-- 확인 완료 : 방문 1건 + 기록 1건 -->
 	<insert id="addVisit" parameterType="wellfair.to.FieldCheckTO" useGeneratedKeys="true" keyProperty="visitId">
 		INSERT INTO visit_history (user_id, bld_id, visited_at, result)
-		VALUES (#{userId}, #{bldId}, NOW(), #{result})
+		VALUES (#{userId}, #{bldId}, IFNULL(#{visitedAt}, NOW()), #{result})
 	</insert>
-	<insert id="addRecord" parameterType="wellfair.to.FieldCheckTO">
-		INSERT INTO survey_record (plan_id, visit_id, content) VALUES (#{planId}, #{visitId}, #{content})
+	<!-- 05 현장 체크(factor_check JSON) · 점수 보정(score_adj)은 archivecheck.do 에서만 채운다 -->
+	<insert id="addRecord" parameterType="wellfair.to.FieldCheckTO" useGeneratedKeys="true" keyProperty="recordId">
+		INSERT INTO survey_record (plan_id, visit_id, content, factor_check, score_adj)
+		VALUES (#{planId}, #{visitId}, #{content}, #{factorCheck}, #{scoreAdj})
 	</insert>
 
 	<!-- 리스트 수정 화면 왼쪽 : 내 보관함 건물 전부 (+ 어느 리스트에 담겼는지). gu 가 있으면 그 구 건물만 -->
 	<select id="getPickList" resultType="wellfair.to.ArchiveRowTO">
 		SELECT f.factor_id, f.vulnerability_id, l.title, f.bld_id, b.sgg_cd, b.emd_nm, b.addr, b.bld_nm, b.use_nm, b.lat, b.lng
 		     , CAST(f.vulnerability_score AS SIGNED) score
+		     , IFNULL(rs.vuln_hh_cnt, 0) vuln_hh_cnt, IFNULL(rs.priority_sum, 0) priority_sum
 		     , CONCAT_WS(' · ', IF(b.ugrnd_res = 1, '지하층', NULL), IF(b.sp_type = '고시원', '고시원', NULL), IF(b.viol_yn = '1', '위반건축물', NULL)) factor_text
 		     , DATE_FORMAT(f.evaluated_at, '%Y-%m-%d') saved_at
 		     , <include refid="mapper-archive.statusExpr"/> status
@@ -119,9 +129,10 @@
 		  FROM vulnerability_factor f
 		  JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
 		  JOIN building b ON b.bld_id = f.bld_id
+		  LEFT JOIN bld_resident_stat rs ON rs.bld_id = b.bld_id
 		 WHERE l.user_id = #{userId} AND l.is_active = 1
 		 <if test="gu != null and gu != ''">AND b.sgg_cd = #{gu}</if>
-		 ORDER BY f.vulnerability_score DESC, f.factor_id
+		 ORDER BY f.vulnerability_score DESC, vuln_hh_cnt DESC, priority_sum DESC, f.bld_id
 	</select>
 
 </mapper>

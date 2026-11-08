@@ -14,7 +14,7 @@ window.MapResult = (function () {
     return '<div class="rs-row" data-id="' + esc(b.bldId) + '" data-lat="' + b.lat + '" data-lng="' + b.lng + '">'
       + '<span class="rs-rank">' + b.rank + '</span>'
       + '<div class="rs-body"><div class="rs-title">' + esc(title) + '</div>'
-      + '<div class="rs-sub">' + esc(b.factorText || '해당 요인 없음') + '</div></div>'
+      + '<div class="rs-sub">' + esc(b.factorText || '해당 요인 없음') + (b.vulnHhCnt ? '<small class="rs-hh">취약 가구 ' + b.vulnHhCnt + '</small>' : '') + '</div></div>'
       + '<div class="rs-score"><b>' + b.score + '</b><i style="width:' + b.score + '%;background:' + MAP_CONFIG.COLORS[lv.key] + '"></i></div>'
       + '</div>';
   }

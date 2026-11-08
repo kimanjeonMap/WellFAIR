@@ -17,6 +17,8 @@ public class ArchiveRowTO {
 	private double lat;
 	private double lng;
 	private int score;              // 저장 당시 점수 (vulnerability_score)
+	private int vulnHhCnt;          // 취약 가구 수 (bld_resident_stat)
+	private int prioritySum;        // 가구 가점 합
 	private String factorText;      // 현재 기본 기준으로 계산한 요인 ("지하층 · 노후")
 	private int priorityRank;       // 내 보관함 안 점수 순위 (우선순위 추정)
 	private String status;          // TODO | DOING | DONE (statusExpr)

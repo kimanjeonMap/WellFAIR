@@ -20,8 +20,14 @@ public class BuildingDAO {
 	@Autowired
 	SqlSession session;
 
-	public List<DongTO> getDongList() {
-		return session.selectList("mapper-building.getDongList");
+	// 법정동 목록 (gu 없으면 전체)
+	public List<DongTO> getDongList(String gu) {
+		return session.selectList("mapper-building.getDongList", gu);
+	}
+
+	// 법정동 → 행정동 쌍
+	public List<DongTO> getAdmList(String gu) {
+		return session.selectList("mapper-building.getAdmList", gu);
 	}
 
 	// 구 경계 계산용 좌표 (앱에서 한 번만)

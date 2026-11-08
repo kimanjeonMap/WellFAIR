@@ -61,11 +61,19 @@
 		SELECT f.factor_id, f.vulnerability_id, l.title, f.bld_id
 		     , t.sgg_cd, t.emd_nm, t.addr, t.bld_nm, t.use_nm, t.lat, t.lng
 		     , CAST(f.vulnerability_score AS SIGNED) score
+		     , t.vuln_hh_cnt, t.priority_sum
 		     , <include refid="mapper-building.factorText"/> factor_text
 		     , DATE_FORMAT(f.evaluated_at, '%Y-%m-%d') saved_at
 		     , <include refid="mapper-archive.statusExpr"/> status
-		     , (SELECT COUNT(*) + 1 FROM vulnerability_factor f2 JOIN vulnerability_list l2 ON l2.vulnerability_id = f2.vulnerability_id
-		         WHERE l2.user_id = #{userId} AND l2.is_active = 1 AND f2.vulnerability_score > f.vulnerability_score) priority_rank
+		     , (SELECT COUNT(*) + 1
+		          FROM vulnerability_factor f2
+		          JOIN vulnerability_list l2 ON l2.vulnerability_id = f2.vulnerability_id
+		          LEFT JOIN bld_resident_stat s2 ON s2.bld_id = f2.bld_id
+		         WHERE l2.user_id = #{userId} AND l2.is_active = 1
+		           AND (f2.vulnerability_score > f.vulnerability_score
+		             OR (f2.vulnerability_score = f.vulnerability_score AND IFNULL(s2.vuln_hh_cnt, 0) > t.vuln_hh_cnt)
+		             OR (f2.vulnerability_score = f.vulnerability_score AND IFNULL(s2.vuln_hh_cnt, 0) = t.vuln_hh_cnt AND IFNULL(s2.priority_sum, 0) > t.priority_sum)
+		             OR (f2.vulnerability_score = f.vulnerability_score AND IFNULL(s2.vuln_hh_cnt, 0) = t.vuln_hh_cnt AND IFNULL(s2.priority_sum, 0) = t.priority_sum AND f2.bld_id &lt; f.bld_id))) priority_rank
 		     , (SELECT sp.survey_id FROM survey_plan sp WHERE sp.factor_id = f.factor_id ORDER BY sp.plan_id LIMIT 1) survey_id
 		     , (SELECT sl.title FROM survey_plan sp JOIN survey_list sl ON sl.survey_id = sp.survey_id WHERE sp.factor_id = f.factor_id ORDER BY sp.plan_id LIMIT 1) survey_title
 		     , (SELECT DATE_FORMAT(MAX(sr.created_at), '%Y-%m-%d') FROM survey_plan sp JOIN survey_record sr ON sr.plan_id = sp.plan_id WHERE sp.factor_id = f.factor_id) checked_at
@@ -74,7 +82,43 @@
 		  JOIN (<include refid="mapper-building.scoredSelect"/>) t ON t.bld_id = f.bld_id
 		 WHERE l.user_id = #{userId} AND l.is_active = 1
 		 <if test="q != null and q != ''">AND (t.addr LIKE CONCAT('%', #{q}, '%') OR t.bld_nm LIKE CONCAT('%', #{q}, '%'))</if>
+		 <!-- ===== [상세 필터] (5-1). 요인 키는 ArchiveService 가 허용 목록으로 걸러서 ${} 로 열 이름에 쓴다 ===== -->
+		 <if test="factors != null and factors.size() > 0 and factorMode == 'any'">
+		   AND (<foreach collection="factors" item="k" separator=" OR ">t.pt_${k} > 0</foreach>)
+		 </if>
+		 <if test="factors != null and factors.size() > 0 and factorMode != 'any'">
+		   AND (<foreach collection="factors" item="k" separator=" AND ">t.pt_${k} > 0</foreach>)
+		 </if>
+		 <if test="bands != null and bands.size() > 0">
+		   AND (<foreach collection="bands" item="bd" separator=" OR ">
+		     <choose>
+		       <when test="bd == '80'">f.vulnerability_score >= 80</when>
+		       <when test="bd == '60'">(f.vulnerability_score >= 60 AND f.vulnerability_score &lt; 80)</when>
+		       <otherwise>(f.vulnerability_score >= 40 AND f.vulnerability_score &lt; 60)</otherwise>
+		     </choose></foreach>)
+		 </if>
+		 <if test="use != null and use != ''">AND t.use_nm = #{use}</if>
+		 <if test="resHigh">AND t.high_iso_cnt > 0</if>
+		 <if test="resOld75">AND t.old75_cnt > 0</if>
+		 <if test="resSevere">AND t.severe_cnt > 0</if>
+		 <if test="visits != null and visits.size() > 0">
+		   AND EXISTS (SELECT 1 FROM survey_plan sp JOIN survey_record sr ON sr.plan_id = sp.plan_id JOIN visit_history v ON v.visit_id = sr.visit_id
+		                WHERE sp.factor_id = f.factor_id AND v.result IN <foreach collection="visits" item="vr" open="(" separator="," close=")">#{vr}</foreach>)
+		 </if>
+		 <if test="savedFrom != null and savedFrom != ''">AND f.evaluated_at >= #{savedFrom}</if>
+		 <if test="savedTo != null and savedTo != ''">AND f.evaluated_at &lt; DATE_ADD(#{savedTo}, INTERVAL 1 DAY)</if>
 	</sql>
+
+	<!-- [상세 필터] 건물 용도 목록 : 내 보관함에 있는 용도만 (userId, gu) -->
+	<select id="getArchiveUseList" resultType="String">
+		SELECT DISTINCT b.use_nm
+		  FROM vulnerability_factor f
+		  JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
+		  JOIN building b ON b.bld_id = f.bld_id
+		 WHERE l.user_id = #{userId} AND l.is_active = 1 AND b.use_nm IS NOT NULL
+		 <if test="gu != null and gu != ''">AND b.sgg_cd = #{gu}</if>
+		 ORDER BY b.use_nm
+	</select>
 
 	<select id="getArchiveTotal" parameterType="wellfair.to.AnalysisCriteriaTO" resultType="int">
 		SELECT COUNT(*) FROM (<include refid="mapper-archive.archiveRows"/>) x
@@ -86,7 +130,7 @@
 		<where><if test="status != null and status != ''">x.status = #{status}</if></where>
 		ORDER BY
 		<choose>
-			<when test="sort == 'priority'">x.priority_rank ASC</when>
+			<when test="sort == 'priority'">x.priority_rank ASC</when>   <!-- = 점수 DESC → 취약 가구 DESC → 가점 합 DESC → bld_id -->
 			<when test="sort == 'recent'">x.checked_at DESC, x.saved_at DESC</when>
 			<otherwise>x.score DESC, x.saved_at DESC</otherwise>
 		</choose>
@@ -101,6 +145,79 @@
 		   AND f.factor_id IN <foreach collection="factorIds" item="id" open="(" separator="," close=")">#{id}</foreach>
 		   AND NOT EXISTS (SELECT 1 FROM survey_plan sp WHERE sp.factor_id = f.factor_id)
 	</delete>
+
+	<!-- ===== 05 건물 확인 이력 (archivedetail.do) ===== -->
+	<!-- 내 보관함의 이 건물 (가장 최근 저장분). 저장 점수 · 어느 분석 리스트인지 -->
+	<select id="getFactorByBld" resultType="wellfair.to.ArchiveTO">
+		SELECT f.factor_id, f.vulnerability_id, f.bld_id
+		     , CAST(f.vulnerability_score AS SIGNED) vulnerability_score, f.vulnerability_grade
+		     , DATE_FORMAT(f.evaluated_at, '%Y-%m-%d') evaluated_at
+		     , l.title, l.user_id, l.sgg_cd
+		  FROM vulnerability_factor f
+		  JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
+		 WHERE l.user_id = #{userId} AND l.is_active = 1 AND f.bld_id = #{bldId}
+		 ORDER BY f.evaluated_at DESC, f.factor_id DESC
+		 LIMIT 1
+	</select>
+
+	<!-- 이 건물이 담긴 내 현장확인 리스트의 plan (현장 체크 저장용). 없으면 "리스트에 먼저 담아 주세요" -->
+	<select id="getPlanByBld" resultType="Long">
+		SELECT sp.plan_id
+		  FROM survey_plan sp
+		  JOIN survey_list sl ON sl.survey_id = sp.survey_id
+		  JOIN vulnerability_factor f ON f.factor_id = sp.factor_id
+		 WHERE sl.user_id = #{userId} AND f.bld_id = #{bldId}
+		 ORDER BY sp.plan_id DESC
+		 LIMIT 1
+	</select>
+
+	<!-- 확인 이력 타임라인 : survey_record + visit_history + 담당자 (+ 이 기록에서 넘긴 이관 최근 1건). 최신순, 예전 담당자 기록도 포함 -->
+	<select id="getRecordList" parameterType="String" resultType="wellfair.to.RecordTO">
+		SELECT r.record_id, r.plan_id, r.visit_id
+		     , DATE_FORMAT(v.visited_at, '%Y-%m-%d %H:%i') visited_at, v.result
+		     , v.user_id, u.user_nm, u.rank_nm
+		     , r.content, r.factor_check, r.score_adj
+		     , DATE_FORMAT(r.created_at, '%Y-%m-%d %H:%i') created_at
+		     , t.dept_nm transfer_dept, t.req_type transfer_req, t.status transfer_status, DATE_FORMAT(t.created_at, '%m-%d') transfer_at
+		  FROM survey_record r
+		  JOIN visit_history v ON v.visit_id = r.visit_id
+		  JOIN users u ON u.user_id = v.user_id
+		  LEFT JOIN transfer_log t ON t.transfer_id = (SELECT MAX(t2.transfer_id) FROM transfer_log t2 WHERE t2.record_id = r.record_id)
+		 WHERE v.bld_id = #{bldId}
+		 ORDER BY v.visited_at DESC, r.record_id DESC
+	</select>
+
+	<!-- 부서 이관 기록 -->
+	<select id="getTransferList" parameterType="String" resultType="wellfair.to.TransferTO">
+		SELECT t.transfer_id, t.bld_id, t.record_id, t.dept_nm, t.req_type, t.status, t.user_id, u.user_nm
+		     , DATE_FORMAT(t.created_at, '%Y-%m-%d %H:%i') created_at
+		  FROM transfer_log t
+		  JOIN users u ON u.user_id = t.user_id
+		 WHERE t.bld_id = #{bldId}
+		 ORDER BY t.created_at DESC, t.transfer_id DESC
+	</select>
+
+	<insert id="addTransfer" parameterType="wellfair.to.TransferTO">
+		INSERT INTO transfer_log (bld_id, record_id, dept_nm, req_type, status, user_id)
+		VALUES (#{bldId}, #{recordId}, #{deptNm}, #{reqType}, 'SENT', #{userId})
+	</insert>
+
+	<!-- 인수인계 메모 -->
+	<select id="getMemoList" parameterType="String" resultType="wellfair.to.MemoTO">
+		SELECT m.memo_id, m.bld_id, m.from_user_id, fu.user_nm from_nm, fu.rank_nm from_rank
+		     , m.to_user_id, tu.user_nm to_nm, tu.rank_nm to_rank
+		     , m.memo, DATE_FORMAT(m.created_at, '%m-%d %H:%i') created_at
+		  FROM handover_memo m
+		  JOIN users fu ON fu.user_id = m.from_user_id
+		  LEFT JOIN users tu ON tu.user_id = m.to_user_id
+		 WHERE m.bld_id = #{bldId}
+		 ORDER BY m.created_at DESC, m.memo_id DESC
+	</select>
+
+	<insert id="addMemo" parameterType="wellfair.to.MemoTO">
+		INSERT INTO handover_memo (bld_id, from_user_id, to_user_id, memo)
+		VALUES (#{bldId}, #{fromUserId}, #{toUserId}, #{memo})
+	</insert>
 
 	<!-- ===== 대시보드 ===== -->
 	<!-- 동별 진행 현황 (내 보관함 건물이 많은 동 순) -->

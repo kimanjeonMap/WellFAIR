@@ -1,5 +1,7 @@
 package wellfair.service;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,5 +25,12 @@ public class MemberService {
 		}
 		member.setPasswordHash(null); // 세션에 비밀번호는 담지 않는다
 		return member;
+	}
+
+	// 05 인수인계 받는 담당자 후보 (같은 구, 비밀번호 비움)
+	public List<MemberTO> getUserList(String sggCd) {
+		List<MemberTO> list = dao.getUserList(sggCd);
+		for (MemberTO m : list) m.setPasswordHash(null);
+		return list;
 	}
 }
