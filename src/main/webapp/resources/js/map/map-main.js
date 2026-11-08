@@ -79,6 +79,9 @@ $(function () {
     var g = guOf(state.gu);
     $('#resultScope').text(state.bbox ? '지도 화면 안'
       : [g ? g.name : '전체 3개 구', state.dong].concat(state.adms.map(admOfKey)).filter(Boolean).join(' · '));
+    /* 법정동·행정동을 고르면 그 경계에 테두리 (행정동 여러 개면 전부). 구만 골랐거나 전체 구면 그리지 않는다 */
+    if (window.DongBoundary && (state.dong || state.adms.length)) DongBoundary.show(map, state.gu, state.dong, state.adms.map(admOfKey));
+    else if (window.DongBoundary) DongBoundary.show(null);
   }
   /* 지도를 옮겨도 리스트는 그대로 (5-1). 분석 뒤 사용자가 옮겼을 때만 [이 지역에서 재검색] 을 띄운다 */
   function onMoved() {
