@@ -20,7 +20,7 @@
     </div>
     <div class="right">
       <a class="btn btn-line" href="${ctx}/fieldedit.do?listId=${field.surveyId}">수정</a>
-      <button type="button" class="btn btn-primary" id="btnSendApp">현장 확인 앱으로 보내기</button>
+      <a class="btn btn-primary btn-wide" href="${ctx}/fieldlist.do">현장 확인 리스트로 돌아가기</a>
     </div>
   </div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
@@ -29,7 +29,7 @@
   <div class="fd-map">
     <div class="nmap" id="map"></div>
     <div class="card route-card">
-      <div class="card-head"><h3>경로 · 소요시간</h3><small><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳 · 직선거리 × 1.3</small></div>
+      <div class="card-head"><h3>경로 · 소요시간</h3><small><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳</small></div>
       <%-- 이동수단 : 저장된 move_mode 에 on. 세 칸 다 눌러서 바꿀 수 있고 바꾸면 api/field/mode.do 로 저장 + 아래 시간 다시 계산 (5-1) --%>
       <c:set var="mm" value="${empty field.moveMode ? 'WALK' : field.moveMode}"/>
       <%@ include file="/WEB-INF/views/include/mode-icons.jspf" %>
@@ -63,11 +63,10 @@
           <td><c:out value="${empty it.welfNm ? '-' : it.welfNm}"/> <span class="muted"><fmt:formatNumber value="${it.welfDist / 1000}" maxFractionDigits="1"/>km</span></td>
           <td>
             <c:choose>
-              <c:when test="${it.checked}"><span class="badge done">확인 완료</span> <span class="muted" style="font-size:12px"><c:out value="${it.checkedAt}"/></span></c:when>
+              <c:when test="${it.checked}"><span class="badge done">확인 완료</span><span class="muted chk-at"><c:out value="${it.checkedAt}"/></span></c:when>
               <c:otherwise>
                 <form method="post" action="${ctx}/fieldcheck.do" class="check-form">
                   <input type="hidden" name="planId" value="${it.planId}"><input type="hidden" name="listId" value="${field.surveyId}">
-                  <select name="result"><option value="MET">면담</option><option value="ABSENT">부재</option><option value="REFUSED">거부</option><option value="OTHER">기타</option></select>
                   <button type="submit" class="btn btn-line btn-sm">확인 완료</button>
                 </form>
               </c:otherwise>
@@ -88,8 +87,8 @@
   window.FD_ITEMS = [<c:forEach var="it" items="${field.items}" varStatus="s">{ title: '<c:out value="${it.title}"/>', lat: ${it.lat}, lng: ${it.lng}, order: ${it.visitOrder == null ? s.index + 1 : it.visitOrder}, checked: ${it.checked} }<c:if test="${!s.last}">,</c:if></c:forEach>];
 </script>
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=<c:out value='${naverClientId}'/>"></script>
-<script src="${ctx}/resources/js/common.js"></script>
-<script src="${ctx}/resources/js/field-map.js"></script>
-<script src="${ctx}/resources/js/field-detail.js"></script>
+<script src="${ctx}/resources/js/common.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/field-map.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/field-detail.js?v=${assetV}"></script>
 </body>
 </html>

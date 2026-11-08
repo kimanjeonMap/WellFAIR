@@ -138,8 +138,8 @@
   <table class="tbl" id="archiveTbl">
     <thead><tr>
       <th style="width:36px"><input type="checkbox" id="chkAll"></th>
-      <th>건물명 / 주소</th><th>취약 요인</th><th style="width:141px">취약도</th><th style="width:135px">우선순위(추정)</th>
-      <th style="width:127px">상태</th><th style="width:90px">저장일</th><th style="width:65px"></th>
+      <th>건물명 / 주소</th><th>취약 요인</th><th style="width:130px">취약도</th><th style="width:110px">우선순위(추정)</th>
+      <th style="width:105px">상태</th><th style="width:90px">저장일</th><th style="width:140px"></th>
     </tr></thead>
     <tbody>
     <%-- 행 클릭 → archivedetail.do?bldId= (05 건물 확인 이력) --%>
@@ -153,7 +153,11 @@
         <td>${r.priorityRank}위</td>
         <td><span class="badge ${fn:toLowerCase(r.status)}"><c:out value="${r.statusLabel}"/></span></td>
         <td class="muted"><c:out value="${r.savedAt}"/></td>
-        <td>
+        <td class="row-act">
+          <c:choose>
+            <c:when test="${r.status == 'TODO'}"><button type="button" class="btn btn-line btn-sm row-del" data-factor="${r.factorId}" title="보관함에서 빼기">삭제</button></c:when>
+            <c:otherwise><button type="button" class="btn btn-line btn-sm row-del" disabled title="현장확인 리스트에 담긴 건물은 리스트에서 먼저 빼야 보관함에서 지울 수 있습니다">삭제</button></c:otherwise>
+          </c:choose>
           <div class="dd row-dd">
             <button type="button" class="btn btn-primary btn-sm dd-toggle">저장 ▾</button>
             <div class="dd-menu">
@@ -162,10 +166,6 @@
                 <button type="button" class="to-survey" data-id="${s.surveyId}" data-factor="${r.factorId}"><c:out value="${s.title}"/>에 저장<small><c:out value="${s.firstAddr}"/> · ${s.itemCnt}건</small></button>
               </c:forEach>
               <button type="button" class="to-survey new" data-id="0" data-factor="${r.factorId}">+ 새 현장확인 리스트 만들어 저장</button>
-              <c:choose>
-                <c:when test="${r.status == 'TODO'}"><button type="button" class="row-del" data-factor="${r.factorId}">보관함에서 빼기</button></c:when>
-                <c:otherwise><button type="button" class="row-del" disabled title="현장확인 리스트에 담긴 건물은 리스트에서 먼저 빼야 보관함에서 뺄 수 있습니다">보관함에서 빼기 (리스트에 담김)</button></c:otherwise>
-              </c:choose>
             </div>
           </div>
         </td>
@@ -189,7 +189,7 @@
 <form id="addItemsForm" method="post" action="${ctx}/fieldadditems.do" style="display:none"><input type="hidden" name="listId" id="addListId"><div id="addIds"></div></form>
 <form id="deleteForm" method="post" action="${ctx}/archivedelete.do" style="display:none"><div id="delIds"></div></form>
 
-<script src="${ctx}/resources/js/common.js"></script>
-<script src="${ctx}/resources/js/archive.js"></script>
+<script src="${ctx}/resources/js/common.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/archive.js?v=${assetV}"></script>
 </body>
 </html>

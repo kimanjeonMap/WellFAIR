@@ -14,7 +14,7 @@
 <div class="page">
   <div class="page-head" style="margin-bottom:23px">
     <h1>현장확인 리스트 ${field.surveyId > 0 ? '수정' : '만들기'}</h1>
-    <div class="right"><a class="btn btn-line" id="btnBackList" href="${ctx}/fieldlist.do">‹ 목록으로</a></div>
+    <div class="right"><a class="btn btn-primary" id="btnBackList" href="${ctx}/fieldlist.do">‹ 목록으로</a></div>
   </div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
 
@@ -26,7 +26,7 @@
     <div class="fe-grid">
       <%-- 왼쪽 : 보관함 건물 --%>
       <div class="card">
-        <div class="card-head"><h3>보관함 건물 <span id="pickCnt">${fn:length(pickList)}</span></h3><small>체크하면 이 리스트에 담깁니다</small></div>
+        <div class="card-head"><h3>보관함 건물 <span id="pickCnt">${fn:length(pickList)}</span></h3></div>
         <div class="pick-list" id="pickList">
           <c:forEach var="p" items="${pickList}">
             <label class="pick-row" data-factor="${p.factorId}">
@@ -52,9 +52,8 @@
         <div class="card-head"><h3><c:out value="${empty field.title ? '새 현장확인 리스트' : field.title}"/></h3></div>
         <div class="fe-title"><span>✎</span><input class="field" name="title" id="title" value="<c:out value='${field.title}'/>" placeholder="리스트 이름 (예: 가리봉동 반지하 밀집)" required></div>
         <div class="fe-tools">
-          <label>출발지 <select class="field sel-sm" id="startSel"><option value="11530">구로구청</option><option value="11470">양천구청</option><option value="11560">영등포구청</option></select></label>
+          <label class="fe-start">출발지 <select class="field sel-sm" id="startSel"><option value="11530">구로구청</option><option value="11470">양천구청</option><option value="11560">영등포구청</option></select></label>
           <button type="button" class="btn btn-line btn-sm" id="btnOptimize" title="출발지에서 가까운 순으로 초안을 만들고 2-opt 로 교차 구간을 풀어 다시 매깁니다 (직선거리)">⇅ 최적 동선으로 정렬</button>
-          <span class="muted" style="font-size:12px">⋮⋮ 를 끌어서 순서를 바꿀 수 있어요</span>
         </div>
         <div class="fe-items" id="feItems"></div>
         <div class="fe-foot">
@@ -96,8 +95,8 @@
   };
 </script>
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=<c:out value='${naverClientId}'/>"></script>
-<script src="${ctx}/resources/js/common.js"></script>
-<script src="${ctx}/resources/js/field-map.js"></script>
-<script src="${ctx}/resources/js/field-edit.js"></script>
+<script src="${ctx}/resources/js/common.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/field-map.js?v=${assetV}"></script>
+<script src="${ctx}/resources/js/field-edit.js?v=${assetV}"></script>
 </body>
 </html>

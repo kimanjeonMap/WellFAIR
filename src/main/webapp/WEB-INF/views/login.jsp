@@ -54,6 +54,6 @@
   </section>
 
 </div>
-<script src="${pageContext.request.contextPath}/resources/js/login.js"></script>
+<script src="${pageContext.request.contextPath}/resources/js/login.js?v=${assetV}"></script>
 </body>
 </html>

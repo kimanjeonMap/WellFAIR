@@ -7,7 +7,7 @@
 .page-head .sub { font-size: 13px; color: var(--text-2); }
 .page-head .right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 .page-head .right .btn { height: 36px; min-width: 95px; padding: 0 14px; font-size: 13px; }
-.page-head .right #btnSendApp { width: 214px; }
+.page-head .right .btn-wide { width: 214px; }
 .page-head.compact { margin-top: -10px; margin-bottom: 15px; }
 .page-head.compact .sub { margin-top: 4px; }
 
@@ -61,7 +61,13 @@
 .tbl .name { font-size: 13px; font-weight: 600; }
 .tbl .badge { padding: 2px 12px; }
 .tbl td.muted { white-space: nowrap; }
+.tbl .chk-at { display: block; margin-top: 3px; font-size: 11px; white-space: nowrap; }
 .tbl .row-dd .btn-sm { height: 26px; padding: 0 9px; font-size: 12px; }
+.tbl td.row-act { white-space: nowrap; text-align: right; }
+.tbl td.row-act > * { vertical-align: middle; }
+.tbl .row-del { height: 26px; padding: 0 10px; margin-right: 6px; font-size: 12px; color: var(--text-2); }
+.tbl .row-del:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); background: transparent; }
+.tbl .row-del:disabled { color: var(--text-3); border-color: var(--line-soft); cursor: not-allowed; }
 .tbl .addr { font-size: 12px; color: var(--text-2); margin-top: 2px; }
 .tbl input[type=checkbox] { accent-color: var(--primary); width: 15px; height: 15px; }
 .score-bar { display: inline-flex; align-items: center; gap: 10px; }
@@ -87,9 +93,7 @@
 .dd-menu button small { display: block; font-size: 11px; color: var(--text-2); margin-top: 2px; }
 .dd-menu button:hover { background: var(--bg-hover); }
 .dd-menu button.new { color: var(--primary); font-weight: 600; border-bottom: 0; }
-.dd-menu button.row-del { border-top: 1px solid var(--line-soft); border-bottom: 0; color: var(--text-2); font-size: 12px; }
-.dd-menu button.row-del:hover:not(:disabled) { color: var(--danger); }
-.dd-menu button.row-del:disabled { color: var(--text-3); cursor: not-allowed; background: none; }
+
 
 /* 선택 바 · 페이지 */
 .sel-bar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin: 0 0 6px; min-height: 28px; font-size: 13px; color: var(--primary); }
@@ -274,7 +278,6 @@
 .kpi .k-val { font-size: 30px; line-height: 40px; font-weight: 700; margin: 10px 0 11px; }
 .kpi .k-val small { font-size: 14px; font-weight: 500; color: var(--text-2); margin-left: 2px; }
 .kpi .k-sub { font-size: 12px; color: var(--text-2); }
-.kpi .k-ico { position: absolute; right: 20px; top: 20px; width: 40px; height: 40px; background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--line); display: grid; place-items: center; color: var(--primary); }
 .dash-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
 .donut-wrap { display: grid; grid-template-columns: 270px 1fr; gap: 30px; align-items: center; padding: 8px 0 4px; }
 .donut-box { position: relative; width: 190px; height: 190px; margin: 0 auto; }
@@ -293,18 +296,30 @@
 .mini-card .mc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .mini-card .mc-top > span:last-child { color: var(--primary); font-size: 12px; }
 .mini-card > b { font-size: 14px; display: block; }
-.mini-card .mc-sub { color: var(--text-2); margin-top: 2px; }
-.mini-card .prog { margin-top: 22px; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; font-size: 12px; }
+.mini-card .mc-sub { color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-card .prog { margin-top: 16px; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; font-size: 12px; }
 .mini-card .prog .muted { color: var(--text-2); }
 .mini-card .prog i { order: 3; flex: 0 0 100%; width: auto; height: 5px; }
-.mini-card .mc-foot { display: flex; justify-content: space-between; margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line-soft); color: var(--text-2); font-size: 12px; }
+.mini-card .mc-foot { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line-soft); color: var(--text-2); font-size: 12px; }
 .mini-card .mc-foot a { color: var(--primary); }
 .dong-row { display: grid; grid-template-columns: 70px 1fr 48px; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13px; }
 .dong-row .bar { display: flex; height: 12px; border-radius: 3px; overflow: hidden; gap: 2px; }
 .dong-row .bar b { display: block; height: 100%; }
 .dong-row .tot { color: var(--text-2); }
 .chart-box { position: relative; height: 186px; }
-.dash-grid > .card { min-height: 277px; }
+/* 대시보드는 한 화면(헤더 아래 전체 높이)에 꽉 차게 : KPI : 1행 : 2행 = 160 : 269 : 269 비율로 늘어난다 */
+.dash-page { display: flex; flex-direction: column; height: calc(100vh - var(--header-h)); min-height: 720px; padding-bottom: 24px; }
+.dash-page .kpi-grid { flex: 160 1 0; min-height: 130px; }
+.dash-page .dash-grid { flex: 269 1 0; min-height: 250px; }
+.dash-page .dash-grid:last-child { margin-bottom: 0; }
+.dash-page .kpi-grid > .card, .dash-page .dash-grid > .card { min-height: 0; overflow: hidden; }
+.dash-page .dash-grid > .card { display: flex; flex-direction: column; }
+.dash-page .donut-wrap { flex: 1; }
+.dash-page .chart-box { flex: 1; height: auto; min-height: 140px; }
+.dash-page .mini-cards { flex: 1; align-content: start; }
+.dash-page .kpi { display: flex; flex-direction: column; justify-content: center; padding: 20px 24px; }
+.dash-page .kpi .k-val { font-size: 36px; line-height: 44px; margin: 12px 0 10px; }
+.dash-page .kpi .k-val small { font-size: 15px; }
 .dash-head { margin-bottom: 22px; }
 .flash { margin-bottom: 12px; padding: 10px 14px; background: rgba(68,142,222,.12); border: 1px solid var(--primary); border-radius: var(--radius); font-size: 13px; }
 
@@ -318,11 +333,15 @@
 .fe-grid .pick-row .tag { background: var(--bg-hover); border: 0; color: var(--text); padding: 2px 8px; }
 .fe-grid .fe-title { height: 40px; margin: 0 12px; padding: 0 12px; border: 1px solid var(--line-soft); border-top: 0; gap: 8px; }
 .fe-grid .fe-title .field { height: 30px; padding: 0 4px; border: 0; background: transparent; font-weight: 600; font-size: 13px; }
-.fe-grid .fe-tools { padding: 8px 16px 0; margin: 0; font-size: 12px; }
-.fe-grid .fe-tools .field { height: 30px; font-size: 12px; }
+.fe-grid .fe-tools { gap: 8px; margin: 0; padding: 12px 16px 6px; font-size: 12px; }
+.fe-grid .fe-tools .sel-sm { margin-left: 0; }
+.fe-grid .fe-tools .fe-start { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: var(--text-2); font-size: 12px; white-space: nowrap; }
+.fe-grid .fe-tools .field { width: 130px; height: 30px; font-size: 12px; }
 .fe-grid .fe-tools .btn-sm { height: 30px; font-size: 12px; }
 .fe-grid .fe-items { min-height: 0; padding: 4px 0; }
-.fe-grid .fe-item { height: 32px; padding: 0 16px; border-bottom: 0; gap: 10px; font-size: 12px; grid-template-columns: 12px 20px 1fr auto auto; }
+.fe-grid .fe-item { height: 32px; padding: 0 16px; border-bottom: 0; gap: 10px; font-size: 12px; grid-template-columns: 12px 20px 1fr auto 58px; }
+.fe-grid .fe-item > :last-child { justify-self: end; white-space: nowrap; padding: 0; }
+.fe-grid .fe-item .leg { white-space: nowrap; }
 .fe-grid .fe-item .num { width: 20px; height: 20px; flex-basis: 20px; font-size: 11px; }
 .fe-grid .fe-foot { margin: 6px 12px 0; padding: 13px 4px 11px; border-top: 1px solid var(--line-soft); }
 .fe-grid .fe-foot .seg button { height: 26px; padding: 0 12px; font-size: 12px; }

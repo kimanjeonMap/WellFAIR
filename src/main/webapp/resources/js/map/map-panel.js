@@ -34,6 +34,7 @@ window.MapPanel = (function () {
     $('#dAddr').text(b.addr);
     $('#dScore').text(b.score + '점');
     $('#dChecked').toggle(!!b.checkedAt).text('현장 확인됨 ' + (b.checkedAt || '').slice(5));
+    $('#dHistory').attr('href', Common.url('archivedetail.do?bldId=' + encodeURIComponent(String(b.bldId))));
     var maxW = d.scoreItems.reduce(function (m, it) { return Math.max(m, it.weight || 0); }, 0);
     $('#dScoreItems').html(d.scoreItems.map(function (it) { return scoreRow(it, maxW); }).join(''));
 

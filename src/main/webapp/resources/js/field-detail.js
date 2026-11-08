@@ -3,7 +3,7 @@
  *    총 소요 · 예상 종료 · 구간별 분을 그 수단(도보 4 / 대중교통 15 / 자동차 20 km/h, 직선 × 1.3)으로 다시 계산 (5-1) */
 $(function () {
   var items = window.FD_ITEMS || [], start = window.FD_START, FM = window.FieldMap, R = window.FD_ROUTE || {};
-  $('#btnSendApp').on('click', function () { Common.toast('현장 확인 앱 연동 예정입니다.'); });
+  /* 현장 확인 앱으로 보내기 버튼은 나중에 따로 만든다 (지금은 [현장 확인 리스트로 돌아가기]) */
 
   /* ---------- 이동수단 전환 ---------- */
   function pad(n) { return (n < 10 ? '0' : '') + n; }
