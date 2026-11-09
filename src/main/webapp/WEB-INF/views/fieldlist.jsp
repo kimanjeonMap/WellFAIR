@@ -14,7 +14,7 @@
   <div class="page-head"><h1>현장 확인 리스트</h1></div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
 
-  <div class="page-head" style="margin-bottom:0">
+  <div class="page-head fl-search-row" style="margin-bottom:0">
     <div class="tabs" style="margin-bottom:0;border:0">
       <a href="${ctx}/fieldlist.do?tab=doing" class="${tab == 'doing' ? 'active' : ''}">진행중 <b>${doingCnt}</b></a>
       <a href="${ctx}/fieldlist.do?tab=done" class="${tab == 'done' ? 'active' : ''}">완료됨 <b>${doneCnt}</b></a>
@@ -28,7 +28,7 @@
       <a class="btn btn-primary" href="${ctx}/fieldedit.do?listId=0">+ 새 현장확인 리스트</a>
     </div>
   </div>
-  <div style="border-bottom:1px solid var(--line);margin:0 0 6px"></div>
+  <div class="fl-divider" style="border-bottom:1px solid var(--line);margin:0 0 6px"></div>
 
   <div class="fl-head"><span>리스트 이름</span><span>건물</span><span>확인 진행</span><span></span></div>
 
@@ -75,7 +75,7 @@
   </c:forEach>
 
   <c:if test="${empty list}"><div class="empty">${tab == 'done' ? '완료된 리스트가 없습니다.' : '진행 중인 리스트가 없습니다.'}</div></c:if>
-  <a class="fl-new" href="${ctx}/fieldedit.do?listId=0" title="새 현장확인 리스트">+</a>
+  <a class="fl-new" href="${ctx}/fieldedit.do?listId=0" title="새 현장확인 리스트"><span>+</span></a>
 </div>
 
 <form id="flDeleteForm" method="post" action="${ctx}/fielddelete.do" style="display:none"><input type="hidden" name="listId" id="flDeleteId"><input type="hidden" name="tab" value="${tab}"></form>

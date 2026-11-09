@@ -74,7 +74,7 @@ $(function () {
 
   /* 행 클릭 → 05 건물 확인 이력 */
   $('#archiveTbl tbody').on('click', 'tr[data-id]', function (e) {
-    if ($(e.target).closest('input, button, .dd, a').length) return;
+    if ($(e.target).closest('input, label, button, .dd, a').length) return;   // 체크 칸(label) 클릭은 선택만
     location.href = Common.url('archivedetail.do?bldId=' + encodeURIComponent(String($(this).data('id'))));
   });
 });

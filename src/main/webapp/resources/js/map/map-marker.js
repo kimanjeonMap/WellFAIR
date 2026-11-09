@@ -184,15 +184,30 @@ window.MapMarker = (function () {
     [prev, bldId].forEach(function (id) { var m = id && pinById[id]; if (m) drawPin(m); });
   }
 
+  /* 구 색 : 구가 여럿이면 "위험 N곳" 많은 순으로 빨강 → 주황 → 노랑 → 초록 (구마다 항상 다른 색, 동점은 sgg_cd 순)
+   * 구가 하나뿐이면 (구청 계정) 비교할 구가 없으니 GU_LEVELS 건수 구간 색 */
+  var GU_RANK_KEYS = ['red', 'orange', 'yellow', 'green'];
+  function guColors(list) {
+    var out = {};
+    if (list.length <= 1) {
+      list.forEach(function (g) { out[g.sggCd] = C.COLORS[guLevelOf(g.riskCount).key]; });
+      return out;
+    }
+    list.slice().sort(function (a, b) { return (b.riskCount - a.riskCount) || String(a.sggCd).localeCompare(String(b.sggCd)); })
+      .forEach(function (g, i) { out[g.sggCd] = C.COLORS[GU_RANK_KEYS[Math.min(i, GU_RANK_KEYS.length - 1)]]; });
+    return out;
+  }
+
   /* ---------- 구 경계 + 라벨 (gu 모드에서만) ---------- */
   function renderGu(list) {
     if (noMap()) return;
     gus.forEach(function (g) { g.polygon.setMap(null); g.label.setMap(null); });
     gus = [];
+    var colBy = guColors(list || []);
     (list || []).forEach(function (g) {
 		if (window.GU_BOUNDARY && GU_BOUNDARY[g.sggCd]) g.ring = GU_BOUNDARY[g.sggCd];
       if (!g.ring || g.ring.length < 3) return;
-      var col = C.COLORS[guLevelOf(g.riskCount).key];
+      var col = colBy[g.sggCd];
       var polygon = new naver.maps.Polygon({
         paths: g.ring.map(function (p) { return LL(p[1], p[0]); }),
         strokeColor: col, strokeWeight: 4, strokeOpacity: 1, fillColor: col, fillOpacity: 0.4, zIndex: 1, clickable: true

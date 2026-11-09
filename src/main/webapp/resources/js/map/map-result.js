@@ -9,15 +9,22 @@ window.MapResult = (function () {
   var getParams = null, onSelect = null;
   var page = 0, totalPages = 0, loading = false, seq = 0;
 
+  /* 점수 색 = 지도 핀 · 도넛과 같은 구간 색 (MAP_CONFIG.LEVELS → COLORS) */
+  function scoreColor(score) {
+    for (var i = 0; i < C.LEVELS.length; i++) if (score >= C.LEVELS[i].min) return C.COLORS[C.LEVELS[i].key];
+    return C.COLORS[C.LEVELS[C.LEVELS.length - 1].key];
+  }
+
   function row(b) {
+    var col = scoreColor(b.score);
     var title = (b.bldNm ? Common.shortAddr(b.addr) + ' ' + b.bldNm : Common.shortAddr(b.addr) + (b.useNm ? ' ' + b.useNm : ''));
     return '<div class="rs-row" data-id="' + esc(b.bldId) + '" data-lat="' + b.lat + '" data-lng="' + b.lng + '">'
       + '<span class="rs-rank">' + b.rank + '</span>'
       + '<div class="rs-body"><div class="rs-title">' + esc(title) + '</div>'
       + '<div class="rs-sub">' + esc(b.factorText || '해당 요인 없음') + (b.vulnHhCnt ? '<small class="rs-hh">취약 가구 ' + b.vulnHhCnt + '</small>' : '') + '</div></div>'
       /* 검색(q)일 때만 기준 미만 건물도 온다 (15단계 C-9) → 점수 옆에 회색 "기준 미만" */
-      + '<div class="rs-score"><b>' + b.score + '</b>' + (b.score < C.SCORE_MIN ? '<em class="rs-under">기준 미만</em>' : '')
-      + '<span class="rs-track"><i style="width:' + Math.min(100, b.score) + '%"></i></span></div>'
+      + '<div class="rs-score"><b style="color:' + col + '">' + b.score + '</b>' + (b.score < C.SCORE_MIN ? '<em class="rs-under">기준 미만</em>' : '')
+      + '<span class="rs-track"><i style="width:' + Math.min(100, b.score) + '%;background:' + col + '"></i></span></div>'
       + '</div>';
   }
 

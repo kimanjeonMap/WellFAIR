@@ -11,8 +11,8 @@
 
 <div class="d-title-wrap">
   <div class="d-title-row"><h3 id="dTitle"></h3><span class="d-checked" id="dChecked" style="display:none"></span></div>
-  <%-- 조사 이력 보기 → 05 건물 확인 이력 (새 탭 : 지도 분석 상태를 그대로 두려고) --%>
-  <div class="d-sub"><span id="dAddr"></span><a class="btn btn-light d-hist" id="dHistory" href="#" target="_blank" rel="noopener">조사 이력 보기</a></div>
+  <%-- 조사 이력 보기 → 05 건물 확인 이력 (새 탭 : 지도 분석 상태를 그대로 두려고). 현장 방문 기록(visitCnt)이 있을 때만 보인다 (map-panel.js) --%>
+  <div class="d-sub"><span id="dAddr"></span><a class="btn btn-light d-hist" id="dHistory" href="#" target="_blank" rel="noopener" style="display:none">조사 이력 보기</a></div>
 </div>
 
 <div class="d-body">

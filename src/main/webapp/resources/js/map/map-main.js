@@ -88,7 +88,13 @@ $(function () {
   function onMoved() {
     var out = checkOutside();
     if (out || !state.analyzed || Date.now() < state.quietUntil) return;
+    placeRefetch();
     $('#btnRefetch').addClass('show');
+  }
+  /* [이 지역에서 재검색] : 네이버 지도처럼 하단 가운데. 범례(왼쪽 아래, 줄 수에 따라 높이가 바뀜) 바로 위 14px 로 띄워 겹치지 않게 */
+  function placeRefetch() {
+    var $lg = $('#legend'), h = $lg.is(':visible') ? $lg.outerHeight() : 0;
+    $('#btnRefetch').css('bottom', (h ? 12 + h + 14 : 24) + 'px');
   }
   $('#btnRefetch').on('click', function () {
     if (!live()) return;
@@ -277,7 +283,8 @@ $(function () {
     var html = '<b>범례</b><span class="lg lg-chk" id="lgCheck" title="현장 확인 표시 기간"><i class="lg-check">✓</i> 현장 확인됨 <small>· ' + CHECK_LABEL[state.checkedMonths] + ' ▾</small>'
       + '<span class="lg-menu" id="chkMenu">' + [3, 12, 0, -1].map(function (m) { return '<button type="button" data-m="' + m + '" class="' + (m === state.checkedMonths ? 'on' : '') + '">' + CHECK_LABEL[m] + '</button>'; }).join('') + '</span></span>';
     if (mode === 'gu') {
-      html += '<span class="lg lg-mode">구 단위 · 구 라벨 = ' + C.SCORE_MIN + '점 이상 · 현장 확인 건수 · 확대하면 묶음</span>';
+      html += '<span class="lg"><i class="sw" style="background:' + C.COLORS.red + '"></i><i class="sw" style="background:' + C.COLORS.orange + '"></i><i class="sw" style="background:' + C.COLORS.yellow + '"></i> 구 색 = 위험 건수 (많을수록 빨강)</span>'
+        + '<span class="lg lg-mode">구 단위 · 구 라벨 = ' + C.SCORE_MIN + '점 이상 · 현장 확인 건수 · 확대하면 묶음</span>';
     } else if (mode === 'cluster') {
       var sample = MapMarker.svgUri(MapMarker.clusterSvg({ size: 10, hist: [2, 3, 2, 3] }));
       html += lv + '<span class="lg"><img src="' + sample + '" width="22" height="22" alt=""> 숫자 = 건물 수 · 테두리 = 점수 구간 비율</span>'
@@ -290,6 +297,7 @@ $(function () {
         + '<span class="lg lg-mode">' + only + '건물 단위 · 점수 높은 순 핀 ' + C.PIN_ICON_MAX + '개</span>';
     }
     $('#legend').html(html);
+    placeRefetch();                                   // 범례 높이가 바뀌면 재검색 버튼도 따라 올라간다
   }
 
   if (live()) {

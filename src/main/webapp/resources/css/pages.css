@@ -72,8 +72,13 @@
 .tbl input[type=checkbox] { accent-color: var(--primary); width: 15px; height: 15px; }
 .score-bar { display: inline-flex; align-items: center; gap: 10px; }
 .score-bar i { display: block; width: 90px; height: 4px; background: #303033; border-radius: 2px; overflow: hidden; }
-.score-bar i b { display: block; height: 100%; background: var(--primary); }
-.score-bar span { font-size: 15px; font-weight: 700; min-width: 24px; }
+.score-bar i b { display: block; height: 100%; background: var(--lv, var(--primary)); }
+.score-bar span { font-size: 15px; font-weight: 700; min-width: 24px; color: var(--lv, inherit); }
+/* 점수 구간 색 = 지도 핀 색 (map-config.js COLORS) */
+.lv-red    { --lv: #D93A3A; }
+.lv-orange { --lv: #EC8B2F; }
+.lv-yellow { --lv: #E2B52A; }
+.lv-green  { --lv: #3E9E5A; }
 .badge { display: inline-block; padding: 1px 8px; line-height: 16px; border-radius: var(--radius); font-size: 11px; background: var(--bg-card); border: 1px solid var(--line); color: var(--text-2); }
 .badge.todo { color: var(--text); }
 .badge.doing { color: var(--primary); border-color: var(--primary); }
@@ -148,7 +153,11 @@
 .fl-new:hover { color: var(--primary); border-color: var(--primary); }
 
 /* 리스트 수정 (03-1) */
-.fe-grid { display: grid; grid-template-columns: minmax(0, 746fr) minmax(0, 630fr); gap: 16px; margin-bottom: 16px; }
+/* 보관함(왼쪽) 을 좁히고 가운데 화살표 칸 → 리스트(오른쪽) */
+.fe-grid { display: grid; grid-template-columns: minmax(0, 2fr) 44px minmax(0, 3fr); gap: 12px; margin-bottom: 16px; }
+.fe-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--primary); }
+.fe-arrow span { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--primary); border-radius: 50%; background: var(--bg-panel); font-size: 18px; font-weight: 700; line-height: 1; }
+.fe-arrow small { font-size: 11px; color: var(--text-2); }
 .pick-list { max-height: 330px; overflow-y: auto; }
 .pick-row { display: grid; grid-template-columns: 24px 1fr auto 44px 90px; align-items: center; gap: 10px; padding: 9px 6px; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
 .pick-row .sc { text-align: right; font-weight: 700; }
@@ -328,9 +337,11 @@
 .fe-grid > .card { padding: 0; overflow: hidden; }
 .fe-grid .card-head { height: 44px; margin: 0; padding: 0 16px; background: var(--bg-card); border-bottom: 1px solid var(--line-soft); }
 .fe-grid .card-head h3 { font-size: 13px; }
-.fe-grid .pick-row { grid-template-columns: 14px 1fr 118px 118px 120px; height: 35px; padding: 0 16px; font-size: 12px; }
+.fe-grid .pick-row { grid-template-columns: 14px minmax(0, 1fr) auto 28px 72px; height: 35px; padding: 0 14px; font-size: 12px; gap: 8px; }
+.fe-grid .pick-row .pk-ti { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fe-grid .pick-row .tag { max-width: 130px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fe-grid .pick-row:last-child { border-bottom: 0; }
-.fe-grid .pick-row .sc { text-align: left; }
+.fe-grid .pick-row .sc { text-align: right; }
 .fe-grid .pick-row .tag { background: var(--bg-hover); border: 0; color: var(--text); padding: 2px 8px; }
 .fe-grid .fe-title { height: 40px; margin: 0 12px; padding: 0 12px; border: 1px solid var(--line-soft); border-top: 0; gap: 8px; }
 .fe-grid .fe-title .field { height: 30px; padding: 0 4px; border: 0; background: transparent; font-weight: 600; font-size: 13px; }
@@ -362,3 +373,30 @@
 .route-modes div .mi { width: 16px; height: 16px; color: var(--text-2); }
 .route-modes div.on .mi { color: var(--primary); }
 .route-modes b { grid-column: 1 / -1; }
+
+/* ===== 2026-11-09 화면 다듬기 ===== */
+/* 새 현장확인 리스트 박스 : 가운데 동그라미 + (시인성) */
+.fl-new { height: 64px; }
+.fl-new span { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; background: var(--bg-card); color: var(--primary); font-size: 18px; line-height: 1; transition: border-color .12s, background-color .12s, color .12s; }
+.fl-new:hover span { border-color: var(--primary); background: var(--primary); color: #fff; }
+
+/* 리스트 수정 : 제목 박스(card-head) 와 이름 입력 박스 사이 간격 */
+.fe-grid .fe-title { margin: 12px 12px 0; border: 1px solid var(--line-soft); }
+
+/* 검색창 · 필터와 구분선 사이 간격 */
+.fl-search-row { align-items: flex-end; }                 /* 현장확인 리스트 : 탭 밑줄은 구분선에 붙이고 */
+.fl-search-row .right { padding-bottom: 10px; }           /* 검색창 · 새 리스트 버튼만 구분선에서 10px 띄움 */
+.fl-search-row + .fl-divider { margin-bottom: 10px !important; }
+.tabs + .filter-bar { margin-top: 16px; }                 /* 보관함 : 탭 줄 ↔ 필터 바 */
+.filter-bar { gap: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.filter-bar .seg + .search-wrap { margin-left: 4px; }
+
+/* 보관함 표 : 체크 칸 전체를 눌러도 체크 (칸 = label) */
+.tbl th.chk-cell, .tbl td.chk-cell { width: 48px; padding: 0; }
+.tbl .chk-cell label { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; cursor: pointer; }
+.tbl td.chk-cell label { min-height: 58px; }
+.tbl .chk-cell label:hover input[type=checkbox] { border-color: var(--primary); }
+
+/* 확대 · 축소 버튼 위치 (모양은 common.css .map-ctrl = 메인 지도와 같음) */
+.fd-map .map-ctrl { right: 16px; bottom: 15px; }   /* 현장확인 상세 : 소요시간 카드와 같은 오른쪽 선 */
+.fe-map .map-ctrl { right: 10px; top: 10px; }      /* 리스트 수정 : 오른쪽 아래는 소요시간 상자라 오른쪽 위 */

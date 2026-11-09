@@ -19,7 +19,7 @@
       <div class="sub"><c:out value="${field.createdAt}"/> <c:out value="${field.title}"/> · 건물 ${field.itemCnt}동 · 담당 <c:out value="${sessionScope.loginMember.userNm}"/> <c:out value="${sessionScope.loginMember.rankNm}"/></div>
     </div>
     <div class="right">
-      <a class="btn btn-line" href="${ctx}/fieldedit.do?listId=${field.surveyId}">수정</a>
+      <a class="btn btn-light" href="${ctx}/fieldedit.do?listId=${field.surveyId}">수정</a>
       <a class="btn btn-primary btn-wide" href="${ctx}/fieldlist.do">현장 확인 리스트로 돌아가기</a>
     </div>
   </div>
@@ -28,6 +28,8 @@
   <%-- 경로 지도 + 소요시간 카드 --%>
   <div class="fd-map">
     <div class="nmap" id="map"></div>
+    <%-- 확대 · 축소 : 네이버 기본 컨트롤(구 · 동 · 부동산 단위 표가 붙는) 대신 지도 화면과 같은 버튼 --%>
+    <div class="map-ctrl"><button type="button" id="zoomIn" title="확대">+</button><button type="button" id="zoomOut" title="축소">−</button></div>
     <div class="card route-card">
       <div class="card-head"><h3>경로 · 소요시간</h3><small><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳</small></div>
       <%-- 이동수단 : 저장된 move_mode 에 on. 세 칸 다 눌러서 바꿀 수 있고 바꾸면 api/field/mode.do 로 저장 + 아래 시간 다시 계산 (5-1) --%>
