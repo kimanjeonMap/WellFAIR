@@ -66,5 +66,40 @@ window.FieldMap = (function () {
 
   function minutes(km, modeKey) { return Math.round(km * ROAD_FACTOR / SPEED[modeKey] * 60); }
 
-  return { GU_OFFICE: GU_OFFICE, ROAD_FACTOR: ROAD_FACTOR, SPEED: SPEED, haversineKm: haversineKm, pathKm: pathKm, optimizeRoute: optimizeRoute, minutes: minutes };
+  /* ---------- TMAP 도보 경로 (03-1 수정 · 03-2 상세 공용) ----------
+   *  서버 api/field/walk.do (RouteService) 가 구간마다 TMAP 보행자 경로를 불러 이어 붙인다. appKey 는 서버에만.
+   *  walkPath(points) : points = [출발, 1, 2, …] ({lat, lng}) → promise { totalDistance(m), totalTime(초), legs:[{distance, time, straight}], path:[[lng,lat]…] }
+   *    실패(appKey 없음 등)는 토스트 없이 reject(msg) : 화면은 기존 점선을 그대로 둔다 */
+  function walkPath(points) {
+    var dfd = $.Deferred();
+    if (!points || points.length < 2) return dfd.reject('').promise();
+    $.ajax({
+      url: Common.url('api/field/walk.do'), method: 'POST', dataType: 'json', traditional: true,
+      data: { lngs: points.map(function (p) { return p.lng; }), lats: points.map(function (p) { return p.lat; }) }
+    }).done(function (r) {
+      if (r && r.path && r.path.length) dfd.resolve(r); else dfd.reject((r && r.msg) || '도보 경로를 찾지 못했습니다.');
+    }).fail(function (xhr) {
+      dfd.reject((xhr.responseJSON && xhr.responseJSON.msg) || '도보 경로를 불러오지 못했습니다.');
+    });
+    return dfd.promise();
+  }
+
+  /* 도보 경로 선 (실선). 반환값 = Polyline (지울 때 setMap(null)) */
+  function drawWalk(map, r, weight) {
+    return new naver.maps.Polyline({
+      map: map, path: r.path.map(function (c) { return new naver.maps.LatLng(c[1], c[0]); }),
+      strokeColor: '#4a8fe0', strokeWeight: weight || 4, strokeOpacity: 0.95, strokeLineCap: 'round', strokeLineJoin: 'round', zIndex: 50
+    });
+  }
+
+  function distText(m) { return m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m) + 'm'; }
+  function timeText(s) { var m = Math.max(1, Math.round(s / 60)); return m >= 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : m + '분'; }
+  /* 지도 위 안내 한 줄 : "도보 경로 (TMAP) 2.3km · 약 34분" */
+  function walkText(r) {
+    var approx = (r.legs || []).some(function (l) { return l.straight; });
+    return '도보 경로 (TMAP) ' + distText(r.totalDistance) + ' · 약 ' + timeText(r.totalTime) + (approx ? ' <small>(일부 구간 직선)</small>' : '');
+  }
+
+  return { GU_OFFICE: GU_OFFICE, ROAD_FACTOR: ROAD_FACTOR, SPEED: SPEED, haversineKm: haversineKm, pathKm: pathKm, optimizeRoute: optimizeRoute, minutes: minutes,
+           walkPath: walkPath, drawWalk: drawWalk, walkText: walkText };
 })();
