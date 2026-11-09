@@ -405,3 +405,7 @@
 .map-float.tc { left: 50%; top: 10px; transform: translateX(-50%); white-space: nowrap; }
 .walk-info { font-weight: 600; color: var(--text); }
 .walk-info small { font-weight: 400; color: var(--text-2); }
+<<<<<<< HEAD
+=======
+.walk-info .walk-sub { display: block; margin-top: 2px; font-size: 11.5px; white-space: normal; max-width: 520px; }
+>>>>>>> 41792602687852f26f9968d59f66ac24227def2c
