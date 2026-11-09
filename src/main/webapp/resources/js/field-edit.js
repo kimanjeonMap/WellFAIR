@@ -25,8 +25,11 @@ $(function () {
   var map = null, line = null, marks = [], pop = null;
   if (hasMap) {
     var c = items[0] || D.pick[0] || start();
-    map = new naver.maps.Map('map', { center: new naver.maps.LatLng(c.lat, c.lng), zoom: 15, zoomControl: true, zoomControlOptions: { position: naver.maps.Position.TOP_RIGHT }, mapDataControl: false, scaleControl: false });
+    map = new naver.maps.Map('map', { center: new naver.maps.LatLng(c.lat, c.lng), zoom: 15, zoomControl: false, mapDataControl: false, scaleControl: false });
   }
+  /* 확대 · 축소 : 네이버 기본 컨트롤 대신 메인 지도와 같은 +/− 버튼 (fieldedit.jsp .map-ctrl, 모양 = common.css) */
+  $('#zoomIn').on('click', function () { if (map) map.setZoom(map.getZoom() + 1, true); });
+  $('#zoomOut').on('click', function () { if (map) map.setZoom(map.getZoom() - 1, true); });
   var live = function () { return !!(map && window.naver && naver.maps); };
   var prevFail = window.navermap_authFailure;
   window.navermap_authFailure = function () { map = null; if (prevFail) prevFail(); };
@@ -153,8 +156,8 @@ $(function () {
   $('#onlyMine').on('change', drawMap);
   if (live()) naver.maps.Event.addListener(map, 'dragstart', function () { if (pop) { pop.remove(); pop = null; } });
 
+  /* 이름은 비워도 된다 : 서버가 "새 리스트N" 으로 붙인다 (FieldService.nextAutoTitle) */
   $('#editForm').on('submit', function () {
-    if (!$.trim($('#title').val())) { Common.toast('리스트 이름을 입력하세요.'); $('#title').trigger('focus'); return false; }
     saving = true;
   });
 

@@ -112,6 +112,8 @@ public class ArchiveService {
 			out.put("ok", false);
 			out.put("code", "DUP");
 			out.put("msg", "이미 보관함에 저장된 건물입니다 (" + prev.getEvaluatedAt() + " 저장 · " + prev.getVulnerabilityScore() + "점)");
+			out.put("savedAt", prev.getEvaluatedAt());              // 안내 모달(map-panel.js)에 따로 보여 준다
+			out.put("savedScore", prev.getVulnerabilityScore());
 			return out;
 		}
 

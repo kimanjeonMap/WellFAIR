@@ -137,7 +137,7 @@
   <%-- 목록 --%>
   <table class="tbl" id="archiveTbl">
     <thead><tr>
-      <th style="width:36px"><input type="checkbox" id="chkAll"></th>
+      <th class="chk-cell"><label title="전체 선택"><input type="checkbox" id="chkAll"></label></th>
       <th>건물명 / 주소</th><th>취약 요인</th><th style="width:130px">취약도</th><th style="width:110px">우선순위(추정)</th>
       <th style="width:105px">상태</th><th style="width:90px">저장일</th><th style="width:140px"></th>
     </tr></thead>
@@ -146,10 +146,11 @@
     <c:forEach var="r" items="${page.list}">
       <c:set var="shortAddr" value="${fn:replace(fn:replace(r.addr, '서울특별시 ', ''), ' ', ' ')}"/>
       <tr data-id="${r.bldId}" data-factor="${r.factorId}" title="클릭하면 건물 확인 이력으로">
-        <td><input type="checkbox" class="rowChk" value="${r.factorId}"></td>
+        <td class="chk-cell"><label><input type="checkbox" class="rowChk" value="${r.factorId}"></label></td>
         <td><div class="name"><c:out value="${fn:substringAfter(shortAddr, '구 ')}"/> <c:out value="${empty r.bldNm ? r.useNm : r.bldNm}"/></div><div class="addr"><c:out value="${r.addr}"/></div></td>
         <td><c:out value="${empty r.factorText ? '-' : r.factorText}"/><c:if test="${r.vulnHhCnt > 0}"> <small class="muted">· 취약 가구 ${r.vulnHhCnt}</small></c:if></td>
-        <td><span class="score-bar"><i><b style="width:${r.score}%"></b></i><span>${r.score}</span></span></td>
+        <%-- 점수 색 = 지도 핀 구간 색 (map-config.js LEVELS : 80 / 60 / 40) --%>
+        <td><span class="score-bar ${r.score >= 80 ? 'lv-red' : r.score >= 60 ? 'lv-orange' : r.score >= 40 ? 'lv-yellow' : 'lv-green'}"><i><b style="width:${r.score}%"></b></i><span>${r.score}</span></span></td>
         <td>${r.priorityRank}위</td>
         <td><span class="badge ${fn:toLowerCase(r.status)}"><c:out value="${r.statusLabel}"/></span></td>
         <td class="muted"><c:out value="${r.savedAt}"/></td>

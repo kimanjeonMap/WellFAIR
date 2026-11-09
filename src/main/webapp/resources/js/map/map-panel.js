@@ -36,7 +36,8 @@ window.MapPanel = (function () {
     $('#dAddr').text(b.addr);
     $('#dScore').text(b.score + '점');
     $('#dChecked').toggle(!!b.checkedAt).text('현장 확인됨 ' + (b.checkedAt || '').slice(5));
-    $('#dHistory').attr('href', Common.url('archivedetail.do?bldId=' + encodeURIComponent(String(b.bldId))));
+    /* 조사 이력 보기 : 현장 방문 기록이 있을 때만 */
+    $('#dHistory').attr('href', Common.url('archivedetail.do?bldId=' + encodeURIComponent(String(b.bldId)))).toggle(b.visitCnt > 0);
     var maxW = d.scoreItems.reduce(function (m, it) { return Math.max(m, it.weight || 0); }, 0);
     $('#dScoreItems').html(d.scoreItems.map(function (it) { return scoreRow(it, maxW); }).join(''));
 
@@ -112,7 +113,7 @@ window.MapPanel = (function () {
     current = null;
     $('#panelRight').addClass('open');
     $('#resultView').hide(); $('#detailView').show();
-    $('#dTitle').text('불러오는 중…'); $('#dAddr').text(''); $('#dScoreItems, #dInfo, #dWelf').empty();
+    $('#dTitle').text('불러오는 중…'); $('#dAddr').text(''); $('#dHistory').hide(); $('#dScoreItems, #dInfo, #dWelf').empty();
     MapApi.building($.extend({}, getCriteria(), { bldId: bldId })).done(function (d) {
       if (!d || !d.building) { Common.toast('건물 정보를 찾을 수 없습니다.'); return; }
       current = d;
@@ -133,18 +134,25 @@ window.MapPanel = (function () {
     $(document).on('keydown', function (e) { if (e.key === 'Escape') closeResidents(); });
 
     /* 보관함 저장 (13단계). 판정은 서버(ArchiveService.addArchive) :
-     *   DUP     = 이미 저장돼 있고 조사 전 → 저장 안 함. 확인창 [확인] = 보관함에서 보기(05 새 탭) / [취소] = 닫기
+     *   DUP     = 이미 저장돼 있고 조사 전 → 저장 안 함. 안내 모달(Common.dialog) [보관함에서 보기] = 05 새 탭 / [닫기]
      *   UPDATED = 조사 이력 있음 → 새 점수로 다시 저장 (묻지 않음)
      *   ADDED   = 처음 저장 */
     $('#btnArchive').on('click', function () {
       if (!current) return;
-      var $b = $(this).prop('disabled', true), bldId = current.building.bldId;
+      var $b = $(this).prop('disabled', true), bld = current.building, bldId = bld.bldId;
       MapApi.archiveAdd(bldId, current.building.sggCd, current.building.score, getCriteria()).done(function (res) {
         if (res && res.ok === false) {
           if (res.code === 'DUP') {
-            if (confirm(res.msg + '\n\n보관함(건물 확인 이력)에서 볼까요?\n[확인] 보관함에서 보기   [취소] 닫기')) {
-              window.open(Common.url('archivedetail.do?bldId=' + encodeURIComponent(String(bldId))), '_blank');
-            }
+            var info = res.savedAt ? esc(res.savedAt) + ' 저장 · ' + esc(res.savedScore) + '점' : esc(res.msg || '');
+            Common.dialog({
+              title: '이미 저장된 건물입니다',
+              html: '<div class="dlg-info"><span class="t">' + esc(titleOf(bld)) + '</span><span class="s">' + info + '</span></div>'
+                + '아직 현장 조사 기록이 없어 다시 저장하지 않았어요.<br>보관함(건물 확인 이력)에서 볼까요?',
+              okText: '보관함에서 보기', cancelText: '닫기'
+            }).done(function (go) {
+              /* 확인 클릭 직후라 팝업 차단에 걸리지 않는다 (사용자 동작 안에서 open) */
+              if (go) window.open(Common.url('archivedetail.do?bldId=' + encodeURIComponent(String(bldId))), '_blank');
+            });
             return;
           }
           Common.toast(res.msg || '저장할 수 없습니다.');

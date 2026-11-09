@@ -28,7 +28,10 @@ $(function () {
 
   if (!(window.naver && naver.maps && naver.maps.Map)) return;
   var c = items[0] || start || { lat: 37.495, lng: 126.858 };
-  var map = new naver.maps.Map('map', { center: new naver.maps.LatLng(c.lat, c.lng), zoom: 16, zoomControl: true, zoomControlOptions: { position: naver.maps.Position.BOTTOM_RIGHT }, mapDataControl: false, scaleControl: false });
+  var map = new naver.maps.Map('map', { center: new naver.maps.LatLng(c.lat, c.lng), zoom: 16, zoomControl: false, mapDataControl: false, scaleControl: false });
+  /* 확대 · 축소 버튼 (fielddetail.jsp .map-ctrl) */
+  $('#zoomIn').on('click', function () { if (map) map.setZoom(map.getZoom() + 1, true); });
+  $('#zoomOut').on('click', function () { if (map) map.setZoom(map.getZoom() - 1, true); });
   var prevFail = window.navermap_authFailure;
   window.navermap_authFailure = function () { map = null; if (prevFail) prevFail(); };
 

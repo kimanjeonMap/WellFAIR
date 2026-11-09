@@ -31,7 +31,7 @@
           <c:forEach var="p" items="${pickList}">
             <label class="pick-row" data-factor="${p.factorId}">
               <input type="checkbox" class="pick-chk" value="${p.factorId}">
-              <span><c:out value="${fn:substringAfter(fn:replace(p.addr, '서울특별시 ', ''), '구 ')}"/> <c:out value="${empty p.bldNm ? p.useNm : p.bldNm}"/></span>
+              <span class="pk-ti"><c:out value="${fn:substringAfter(fn:replace(p.addr, '서울특별시 ', ''), '구 ')}"/> <c:out value="${empty p.bldNm ? p.useNm : p.bldNm}"/></span>
               <span class="tag"><c:out value="${empty p.factorText ? '요인 없음' : fn:split(p.factorText, '·')[0]}"/><c:if test="${p.vulnHhCnt > 0}"> · 가구 ${p.vulnHhCnt}</c:if></span>
               <span class="sc">${p.score}</span>
               <span>
@@ -47,10 +47,13 @@
         </div>
       </div>
 
+      <%-- 가운데 화살표 : 보관함 건물 → 리스트에 담는 방향 --%>
+      <div class="fe-arrow" aria-hidden="true"><span>→</span><small>담기</small></div>
+
       <%-- 오른쪽 : 리스트 이름 · 순서 --%>
       <div class="card">
         <div class="card-head"><h3><c:out value="${empty field.title ? '새 현장확인 리스트' : field.title}"/></h3></div>
-        <div class="fe-title"><span>✎</span><input class="field" name="title" id="title" value="<c:out value='${field.title}'/>" placeholder="리스트 이름 (예: 가리봉동 반지하 밀집)" maxlength="100" required></div>
+        <div class="fe-title"><span>✎</span><input class="field" name="title" id="title" value="<c:out value='${field.title}'/>" placeholder="${field.surveyId > 0 ? '리스트 이름 (비워 두면 원래 이름 유지)' : '리스트 이름 (비워 두면 새 리스트1, 새 리스트2 … 로 저장)'}" maxlength="100"></div>
         <div class="fe-tools">
           <label class="fe-start">출발지 <select class="field sel-sm" id="startSel"><option value="11530">구로구청</option><option value="11470">양천구청</option><option value="11560">영등포구청</option></select></label>
           <button type="button" class="btn btn-line btn-sm" id="btnOptimize" title="출발지에서 가까운 순으로 초안을 만들고 2-opt 로 교차 구간을 풀어 다시 매깁니다 (직선거리)">⇅ 최적 동선으로 정렬</button>
@@ -73,6 +76,8 @@
   <%-- 지도 : 담긴 건물 = 번호 핀 + 선, 나머지 보관함 건물 = 빈 원 (누르면 담기) --%>
   <div class="fe-map">
     <div class="nmap" id="map"></div>
+    <%-- 확대 · 축소 : 메인 지도와 같은 버튼 (네이버 기본 컨트롤은 끔) --%>
+    <div class="map-ctrl"><button type="button" id="zoomIn" title="확대">+</button><button type="button" id="zoomOut" title="축소">−</button></div>
     <div class="map-float tl"><label class="chk"><input type="checkbox" id="onlyMine"> 리스트 건물만 보기 (<span id="mineCnt">0</span>)</label></div>
     <div class="map-float bl"><span><i class="lg-dot fill"></i>리스트에 담긴 건물</span><span><i class="lg-dot"></i>담을 수 있는 보관함 건물</span></div>
     <%@ include file="/WEB-INF/views/include/mode-icons.jspf" %>

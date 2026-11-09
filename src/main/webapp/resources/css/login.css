@@ -51,8 +51,8 @@
 .login-form { width: 100%; max-width: 400px; }
 .login-form h2 { font-size: 24px; font-weight: 700; }
 .login-form .desc { margin: 12px 0 17px; color: var(--text-2); }
-.login-form label { display: block; margin-bottom: 2px; }
-.login-form .field { height: 40px; margin-bottom: 10px; background: var(--bg-panel); }
+.login-form label { display: block; margin-bottom: 8px; }
+.login-form .field { height: 40px; margin-bottom: 20px; background: var(--bg-panel); }
 
 .login-options .chk { display: inline-flex; margin: 0; }
 .login-options {
@@ -60,7 +60,7 @@
   justify-content: space-between;
   align-items: center;
   height: 16px;
-  margin: 7px 0 19px;
+  margin: 0 0 19px;
   font-size: 13px;
 }
 .login-error {

@@ -43,6 +43,13 @@ public class FieldDAO {
 		return session.selectOne("mapper-field.countMyFactors", p);
 	}
 
+	/** 내 리스트 중 이름이 prefix 로 시작하는 것들의 이름 (자동 이름 "새 리스트N" 번호 매기기용) */
+	public List<String> getAutoTitles(long userId, String prefix) {
+		Map<String, Object> p = new HashMap<>();
+		p.put("userId", userId); p.put("prefix", prefix);
+		return session.selectList("mapper-field.getAutoTitles", p);
+	}
+
 	public int addField(FieldListTO to) {
 		return session.insert("mapper-field.addField", to);
 	}

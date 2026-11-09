@@ -70,7 +70,7 @@ public class FieldController {
 	// POST fieldedit.do : listId, title, moveMode(walk/transit/car), factorIds(순서대로) → redirect:fielddetail.do
 	@PostMapping("fieldedit.do")
 	public String edit(@RequestParam(value = "listId", defaultValue = "0") long listId,
-			@RequestParam("title") String title,
+			@RequestParam(value = "title", required = false) String title,   // 비우면 "새 리스트N" (FieldService.nextAutoTitle)
 			@RequestParam(value = "moveMode", required = false) String moveMode,
 			@RequestParam(value = "factorIds", required = false) List<Long> factorIds,
 			HttpSession session, RedirectAttributes ra) {
