@@ -35,6 +35,7 @@ public class AnalysisCriteriaTO {
 	private String gu;                // sgg_cd (11530 구로 / 11470 양천 / 11560 영등포), 없으면 전체
 	private String dong;              // 법정동 emd_nm, 없으면 전체
 	private String adm;               // 행정동 adm_nm (동 선택 2단계), 없으면 법정동 전체
+	private List<String> adms;        // 행정동 여러 개 "법정동|행정동" (지도 동 선택 복수 선택). 있으면 dong · adm 대신 이 목록
 	private String q;                 // 건물명·주소 검색어
 	private String status;            // 보관함 탭 : TODO | DOING | DONE (없으면 전체)
 
@@ -85,6 +86,11 @@ public class AnalysisCriteriaTO {
 
 	public int getOffset() {
 		return (Math.max(page, 1) - 1) * size;
+	}
+
+	/** 목록 page 가 1 미만이면 1 로 (15단계 D-14). Lombok 은 같은 이름의 setter 가 있으면 만들지 않는다 */
+	public void setPage(int page) {
+		this.page = Math.max(1, page);
 	}
 
 	/** bbox 문자열을 min/max 로 풀어 넣는다. 형식이 다르면 범위 없음 */

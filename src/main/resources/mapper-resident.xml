@@ -89,11 +89,21 @@
 		  FROM (<include refid="mapper-resident.householdSelect"/>) y
 	</select>
 
-	<!-- 거주 가구 탭 : 세대 카드 (가림 처리는 ResidentService) -->
+	<!-- 거주 가구 탭 : 세대 카드 (가림 처리는 ResidentService).
+	     순서 = 가장 취약한 순 (12단계) : 가구 가점 → 고립 등급(고위험고립 → 사회적고립) → 가구원 최고 나이 → 1인 가구 먼저 → id. JS 는 다시 정렬하지 않는다 -->
 	<select id="getResidentList" parameterType="String" resultType="wellfair.to.ResidentTO">
 		SELECT y.*
 		  FROM (<include refid="mapper-resident.householdSelect"/>) y
-		 ORDER BY y.priority DESC, y.res_flr, y.resident_id
+		 ORDER BY y.priority DESC
+		     , CASE y.risk_grade WHEN '고위험고립' THEN 0 WHEN '사회적고립' THEN 1 ELSE 2 END
+		     , y.max_age DESC
+		     , y.hh_mbr_cnt ASC
+		     , y.resident_id
+	</select>
+
+	<!-- 가구(hh_id)가 사는 건물 : 구청 계정의 관할 확인용 (15단계 A-1, resident.do) -->
+	<select id="getResidentBldId" parameterType="long" resultType="String">
+		SELECT r.bld_id FROM residency r WHERE r.hh_id = #{residentId} LIMIT 1
 	</select>
 
 	<!-- 정보 확인하기 : 동·호수만 -->

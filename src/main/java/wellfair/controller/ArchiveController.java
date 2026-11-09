@@ -125,10 +125,12 @@ public class ArchiveController {
 			HttpSession session, RedirectAttributes ra) {
 		Map<String, String> checks = new LinkedHashMap<>();                 // 라디오 이름 chk_<요인키> = Y | N | ?
 		for (Map.Entry<String, String> e : all.entrySet()) if (e.getKey().startsWith("chk_")) checks.put(e.getKey().substring(4), e.getValue());
+		MemberTO member = member(session);
+		archiveService.assertMyGu(member, bldId);                            // 구청 계정은 소속 구 건물만 (다른 구면 403 → 알림 후 원래 페이지)
 		try {
-			archiveService.addCheck(member(session).getUserId(), bldId, visitedAt, result, checks, added, content, scoreAdj);
+			archiveService.addCheck(member.getUserId(), bldId, visitedAt, result, checks, added, content, scoreAdj);
 			ra.addFlashAttribute("msg", "현장 확인 결과를 저장했습니다.");
-		} catch (IllegalStateException e) {
+		} catch (IllegalStateException | IllegalArgumentException e) {      // 리스트에 없음 · 방문 일시/결과 이상
 			ra.addFlashAttribute("msg", e.getMessage());
 		}
 		return "redirect:archivedetail.do?bldId=" + bldId;
@@ -141,8 +143,14 @@ public class ArchiveController {
 			@RequestParam(value = "reqType", required = false) String reqType,
 			@RequestParam(value = "recordId", required = false) Long recordId,
 			HttpSession session, RedirectAttributes ra) {
-		boolean ok = archiveService.addTransfer(member(session).getUserId(), bldId, deptNm, reqType, recordId);
-		ra.addFlashAttribute("msg", ok ? deptNm + "에 " + (reqType == null ? "점검 요청" : reqType) + "을 넘겼습니다. (주소만 전달)" : "넘기지 못했습니다.");
+		MemberTO member = member(session);
+		archiveService.assertMyGu(member, bldId);                            // 구청 계정은 소속 구 건물만
+		try {
+			boolean ok = archiveService.addTransfer(member.getUserId(), bldId, deptNm, reqType, recordId);
+			ra.addFlashAttribute("msg", ok ? deptNm + "에 " + (reqType == null ? "점검 요청" : reqType) + "을 넘겼습니다. (주소만 전달)" : "넘기지 못했습니다.");
+		} catch (IllegalArgumentException e) {                              // 목록에 없는 부서 · 요청 종류
+			ra.addFlashAttribute("msg", e.getMessage());
+		}
 		return "redirect:archivedetail.do?bldId=" + bldId;
 	}
 
@@ -152,8 +160,14 @@ public class ArchiveController {
 			@RequestParam("memo") String memo,
 			@RequestParam(value = "toUserId", required = false) Long toUserId,
 			HttpSession session, RedirectAttributes ra) {
-		boolean ok = archiveService.addMemo(member(session).getUserId(), bldId, toUserId, memo);
-		ra.addFlashAttribute("msg", ok ? "인수인계 메모를 남겼습니다." : "메모 내용을 입력하세요.");
+		MemberTO member = member(session);
+		archiveService.assertMyGu(member, bldId);                            // 구청 계정은 소속 구 건물만
+		try {
+			boolean ok = archiveService.addMemo(member, bldId, toUserId, memo);
+			ra.addFlashAttribute("msg", ok ? "인수인계 메모를 남겼습니다." : "메모를 저장하지 못했습니다.");
+		} catch (IllegalArgumentException e) {                              // 빈 메모 · 500자 초과 · 없는/다른 구 담당자
+			ra.addFlashAttribute("msg", e.getMessage());
+		}
 		return "redirect:archivedetail.do?bldId=" + bldId;
 	}
 

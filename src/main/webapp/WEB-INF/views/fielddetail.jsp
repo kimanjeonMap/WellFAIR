@@ -13,14 +13,14 @@
 <%@ include file="/WEB-INF/views/include/header.jspf" %>
 
 <div class="page">
-  <div class="page-head">
+  <div class="page-head compact">
     <div>
       <h1>현장 확인</h1>
       <div class="sub"><c:out value="${field.createdAt}"/> <c:out value="${field.title}"/> · 건물 ${field.itemCnt}동 · 담당 <c:out value="${sessionScope.loginMember.userNm}"/> <c:out value="${sessionScope.loginMember.rankNm}"/></div>
     </div>
     <div class="right">
-      <a class="btn btn-line" href="${ctx}/fieldedit.do?listId=${field.surveyId}">수정</a>
-      <button type="button" class="btn btn-primary" id="btnSendApp">현장 확인 앱으로 보내기</button>
+      <a class="btn btn-light" href="${ctx}/fieldedit.do?listId=${field.surveyId}">편집</a>
+      <a class="btn btn-primary btn-wide" href="${ctx}/fieldlist.do">현장 확인 리스트로 돌아가기</a>
     </div>
   </div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
@@ -28,17 +28,20 @@
   <%-- 경로 지도 + 소요시간 카드 --%>
   <div class="fd-map">
     <div class="nmap" id="map"></div>
+    <%-- 확대 · 축소 : 네이버 기본 컨트롤(구 · 동 · 부동산 단위 표가 붙는) 대신 지도 화면과 같은 버튼 --%>
+    <div class="map-ctrl"><button type="button" id="zoomIn" title="확대">+</button><button type="button" id="zoomOut" title="축소">−</button></div>
     <div class="card route-card">
-      <div class="card-head"><h3>경로 · 소요시간</h3><small><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳 · 직선거리 × 1.3</small></div>
+      <div class="card-head"><h3>경로 · 소요시간</h3><small id="rtCap"><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳 · 직선거리 추정</small></div>
       <%-- 이동수단 : 저장된 move_mode 에 on. 세 칸 다 눌러서 바꿀 수 있고 바꾸면 api/field/mode.do 로 저장 + 아래 시간 다시 계산 (5-1) --%>
       <c:set var="mm" value="${empty field.moveMode ? 'WALK' : field.moveMode}"/>
+      <%@ include file="/WEB-INF/views/include/mode-icons.jspf" %>
       <div class="route-modes" id="routeModes">
-        <div data-mode="walk" class="${mm == 'WALK' ? 'on' : ''}" title="도보 4km/h">도보<b>${walkMin}<small>분</small></b></div>
-        <div data-mode="transit" class="${mm == 'TRANSIT' ? 'on' : ''}" title="대중교통 15km/h">대중교통<b>${transitMin}<small>분</small></b></div>
-        <div data-mode="car" class="${mm == 'CAR' ? 'on' : ''}" title="자동차 20km/h">자동차<b>${carMin}<small>분</small></b></div>
+        <div data-mode="walk" class="${mm == 'WALK' ? 'on' : ''}" title="도보 4km/h">${icoWalk}도보<b>${walkMin}<small>분</small></b></div>
+        <div data-mode="transit" class="${mm == 'TRANSIT' ? 'on' : ''}" title="대중교통 15km/h">${icoTransit}대중교통<b>${transitMin}<small>분</small></b></div>
+        <div data-mode="car" class="${mm == 'CAR' ? 'on' : ''}" title="자동차 20km/h">${icoCar}자동차<b>${carMin}<small>분</small></b></div>
       </div>
       <div class="route-stats">
-        <div>이동 거리<b>${km}km</b></div>
+        <div>이동 거리<b id="rtKm">${km}km</b></div>
         <div>현장 확인 예상<b>${checkMin}분 <small>(${field.itemCnt}동 × 20분)</small></b></div>
         <div>총 소요<b id="rtTotal"><c:out value="${totalText}"/></b></div>
         <div>출발 → 예상 종료<b id="rtEnd">09:30 → ${endTime}</b></div>
@@ -58,15 +61,14 @@
           <td><div class="name"><a href="${ctx}/archivedetail.do?bldId=${it.bldId}" title="건물 확인 이력"><c:out value="${it.title}"/></a></div><div class="addr"><c:out value="${it.addr}"/></div></td>
           <td class="muted"><c:out value="${it.buildingInfo}"/></td>
           <td><c:forEach var="f" items="${fn:split(it.factorText, '·')}"><span class="tag"><c:out value="${fn:trim(f)}"/></span></c:forEach></td>
-          <td><c:choose><c:when test="${s.first}"><c:out value="${startName}"/>에서 </c:when><c:otherwise>이전 지점에서 </c:otherwise></c:choose><span class="leg-min" data-km="${it.legKm}">${it.legMin}</span>분 <span class="muted">(${it.legKm}km)</span></td>
+          <td><c:choose><c:when test="${s.first}"><c:out value="${startName}"/>에서 </c:when><c:otherwise>이전 지점에서 </c:otherwise></c:choose><span class="leg-min" data-km="${it.legKm}">${it.legMin}</span>분 <span class="muted leg-km">(${it.legKm}km)</span></td>
           <td><c:out value="${empty it.welfNm ? '-' : it.welfNm}"/> <span class="muted"><fmt:formatNumber value="${it.welfDist / 1000}" maxFractionDigits="1"/>km</span></td>
           <td>
             <c:choose>
-              <c:when test="${it.checked}"><span class="badge done">확인 완료</span> <span class="muted" style="font-size:12px"><c:out value="${it.checkedAt}"/></span></c:when>
+              <c:when test="${it.checked}"><span class="badge done">확인 완료</span><span class="muted chk-at"><c:out value="${it.checkedAt}"/></span></c:when>
               <c:otherwise>
                 <form method="post" action="${ctx}/fieldcheck.do" class="check-form">
                   <input type="hidden" name="planId" value="${it.planId}"><input type="hidden" name="listId" value="${field.surveyId}">
-                  <select name="result"><option value="MET">면담</option><option value="ABSENT">부재</option><option value="REFUSED">거부</option><option value="OTHER">기타</option></select>
                   <button type="submit" class="btn btn-line btn-sm">확인 완료</button>
                 </form>
               </c:otherwise>
@@ -74,7 +76,7 @@
           </td>
         </tr>
       </c:forEach>
-      <c:if test="${empty field.items}"><tr><td colspan="7" class="empty">담긴 건물이 없습니다. "수정"에서 보관함 건물을 담으세요.</td></tr></c:if>
+      <c:if test="${empty field.items}"><tr><td colspan="7" class="empty">담긴 건물이 없습니다. "편집"에서 보관함 건물을 담으세요.</td></tr></c:if>
       </tbody>
     </table>
   </div>

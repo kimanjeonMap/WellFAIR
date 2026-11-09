@@ -1,9 +1,12 @@
 /*
- * 현장확인 리스트 수정 (fieldedit.jsp)
+ * 현장 확인 리스트 편집 (fieldedit.jsp)
  *  - 왼쪽 체크 / 지도 빈 원 클릭 → 담기, 오른쪽 "빼기" → 빼기, 끌어서 순서 바꾸기
  *  - [최적 동선으로 정렬] : FieldMap.optimizeRoute(출발점, 미확인 건물) — 확인 완료 건물은 앞에 그대로 둔다
  *  - 출발점 : 구청(선택, 기본 = 첫 건물의 구). 저장되지 않고 순서 계산·시간 표시에만 쓴다
  *  - 지도 : 출발 핀 + 번호 핀 + 점선, 나머지 보관함 건물은 빈 원
+ *  - 경로 (TMAP) : 점선을 먼저 그리고, 0.8초 동안 더 바뀌지 않으면 api/field/walk.do 로 고른 이동수단(도보 · 대중교통 · 자동차) 경로를 받아 바꾼다
+ *                      (담기 · 빼기 · 순서 바꾸기 때마다 바로 부르지 않게. 실패하면 점선 그대로)
+ *    경로가 오면 오른쪽 목록의 구간별 분 · 소요시간 상자(고른 수단) · 머리글 거리도 TMAP 값으로 (render 가 직선 추정을 먼저 쓰고 덮어쓴다)
  */
 $(function () {
   var D = window.FE_DATA, esc = Common.esc, FM = window.FieldMap;
@@ -11,6 +14,7 @@ $(function () {
   var byFactor = {};
   D.pick.forEach(function (p) { byFactor[p.factorId] = p; });
   var mode = ($('#modeSeg button.on').data('mode')) || 'walk';   // 저장된 이동수단 (survey_list.move_mode)
+  $('#rtBox .rt[data-mode=' + mode + ']').addClass('on');
 
   /* 출발점 (구청) */
   var $start = $('#startSel');
@@ -21,11 +25,15 @@ $(function () {
 
   /* ---------- 지도 ---------- */
   var hasMap = !!(window.naver && naver.maps && naver.maps.Map);
-  var map = null, line = null, marks = [], pop = null;
+  var map = null, line = null, marks = [], pop = null, walkTimer = null, walkSeq = 0;
+  var $walkInfo = $('<div class="map-float tc walk-info"></div>').hide().appendTo('.fe-map');
   if (hasMap) {
     var c = items[0] || D.pick[0] || start();
-    map = new naver.maps.Map('map', { center: new naver.maps.LatLng(c.lat, c.lng), zoom: 15, zoomControl: true, zoomControlOptions: { position: naver.maps.Position.TOP_RIGHT }, mapDataControl: false, scaleControl: false });
+    map = new naver.maps.Map('map', { center: new naver.maps.LatLng(c.lat, c.lng), zoom: 15, zoomControl: false, mapDataControl: false, scaleControl: false });
   }
+  /* 확대 · 축소 : 네이버 기본 컨트롤 대신 메인 지도와 같은 +/− 버튼 (fieldedit.jsp .map-ctrl, 모양 = common.css) */
+  $('#zoomIn').on('click', function () { if (map) map.setZoom(map.getZoom() + 1, true); });
+  $('#zoomOut').on('click', function () { if (map) map.setZoom(map.getZoom() - 1, true); });
   var live = function () { return !!(map && window.naver && naver.maps); };
   var prevFail = window.navermap_authFailure;
   window.navermap_authFailure = function () { map = null; if (prevFail) prevFail(); };
@@ -41,7 +49,7 @@ $(function () {
         + '<span class="drag" title="끌어서 순서 바꾸기">⋮⋮</span>'
         + '<span class="num' + (it.checked ? ' done' : '') + '">' + (it.checked ? '✓' : (i + 1)) + '</span>'
         + '<span>' + esc(it.title) + ' <span class="muted">' + it.score + '점</span></span>'
-        + '<span class="leg">' + (i === 0 ? esc(s.name) + '에서 ' : '이전 지점에서 ') + min + '분 (' + leg.toFixed(1) + 'km)</span>'
+        + '<span class="leg" data-from="' + (i === 0 ? esc(s.name) + '에서 ' : '이전 지점에서 ') + '">' + (i === 0 ? esc(s.name) + '에서 ' : '이전 지점에서 ') + min + '분 (' + leg.toFixed(1) + 'km)</span>'
         + (it.checked ? '<span class="muted" style="font-size:12px">확인 완료</span>' : '<button type="button" class="rm">빼기 ×</button>') + '</div>';
     }).join('');
     $('#feItems').html(html || '<div class="empty">왼쪽에서 건물을 체크하거나 지도의 빈 원을 눌러 담으세요.</div>');
@@ -78,6 +86,41 @@ $(function () {
       var path = [new naver.maps.LatLng(s.lat, s.lng)].concat(items.map(function (it) { return new naver.maps.LatLng(it.lat, it.lng); }));
       line = new naver.maps.Polyline({ map: map, path: path, strokeColor: '#4a8fe0', strokeWeight: 3, strokeStyle: 'shortdash', strokeOpacity: 0.9, zIndex: 50 });
     }
+    loadWalk(s);
+  }
+
+  /* 도보 경로 (TMAP) : 마지막 변경 0.8초 뒤 한 번. 늦게 온 응답(그 사이 또 바뀜)은 버린다 */
+  function loadWalk(s) {
+    clearTimeout(walkTimer);
+    var my = ++walkSeq;
+    $walkInfo.hide();
+    if (!items.length) return;
+    var points = [s].concat(items.map(function (it) { return { lat: it.lat, lng: it.lng }; }));
+    walkTimer = setTimeout(function () {
+      $walkInfo.text('경로 찾는 중…').show();
+      FM.walkPath(points, mode).done(function (r) {
+        if (my !== walkSeq || !live()) return;
+        if (line) line.setMap(null);
+        line = FM.drawWalk(map, r, 4);
+        $walkInfo.html(FM.walkText(r)).show();
+        applyRoute(s, r);
+      }).fail(function (msg) {
+        if (my !== walkSeq) return;
+        if (msg) $walkInfo.text(msg + ' (직선으로 표시)').show(); else $walkInfo.hide();
+      });
+    }, 800);
+  }
+
+  /* TMAP 응답으로 목록 · 소요시간 상자 숫자 교체. legs[i] = 출발→1, 1→2 … = items[i] 줄 */
+  function applyRoute(s, r) {
+    $('#feItems .fe-item').each(function (i) {
+      var leg = (r.legs || [])[i]; if (!leg) return;
+      var $l = $(this).find('.leg');
+      $l.text($l.data('from') + Math.max(1, Math.round(leg.time / 60)) + '분 (' + (leg.distance / 1000).toFixed(1) + 'km' + (leg.straight ? ' · 직선' : '') + ')');
+    });
+    var min = Math.max(1, Math.round(r.totalTime / 60));
+    $({ walk: '#tWalk', transit: '#tTransit', car: '#tCar' }[r.mode] || '#tWalk').text(min);
+    $('#routeCap').text(s.name + ' 출발 · ' + items.length + '곳 · TMAP ' + ({ walk: '도보', transit: '대중교통', car: '자동차' }[r.mode] || '도보') + ' ' + (r.totalDistance / 1000).toFixed(1) + 'km');
   }
 
   /* 빈 원 → 담기 말풍선 */
@@ -142,6 +185,7 @@ $(function () {
   $('#feItems').on('click', '.rm', function () { remove(Number($(this).closest('.fe-item').data('factor'))); });
   $('#modeSeg button').on('click', function () {
     $('#modeSeg button').removeClass('on'); $(this).addClass('on');
+    $('#rtBox .rt').removeClass('on').filter('[data-mode=' + $(this).data('mode') + ']').addClass('on');
     mode = $(this).data('mode');
     $('#moveMode').val(mode.toUpperCase());      // 저장 시 survey_list.move_mode
     render();
@@ -151,9 +195,21 @@ $(function () {
   $('#onlyMine').on('change', drawMap);
   if (live()) naver.maps.Event.addListener(map, 'dragstart', function () { if (pop) { pop.remove(); pop = null; } });
 
+  /* 이름은 비워도 된다 : 서버가 "새 리스트N" 으로 붙인다 (FieldService.nextAutoTitle) */
   $('#editForm').on('submit', function () {
-    if (!$.trim($('#title').val())) { Common.toast('리스트 이름을 입력하세요.'); $('#title').trigger('focus'); return false; }
+    saving = true;
   });
+
+  /* [‹ 목록으로] : 저장 안 한 변경(이름 · 건물 · 순서 · 이동수단)이 있으면 한 번 묻는다 */
+  var saving = false;
+  function snapshot() { return [$.trim($('#title').val()), mode, items.map(function (it) { return it.factorId; }).join(',')].join('|'); }
+  var saved = snapshot();
+  $('#btnBackList').on('click', function (e) {
+    if (snapshot() !== saved && !confirm('저장하지 않은 변경 내용이 있습니다. 저장하지 않고 목록으로 돌아갈까요?')) e.preventDefault();
+  });
+  $(window).on('beforeunload', function () { if (!saving && snapshot() !== saved && !leaving) return '저장하지 않은 변경 내용이 있습니다.'; });
+  var leaving = false;
+  $('#btnBackList').on('click', function (e) { if (!e.isDefaultPrevented()) leaving = true; });
 
   render();
 });

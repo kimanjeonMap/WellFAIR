@@ -25,6 +25,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body {
   margin: 0;
@@ -191,3 +192,42 @@ input[type=range] { accent-color: var(--primary); }
   opacity: 0; pointer-events: none; transition: all .2s; z-index: 100;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* 안내 · 확인 모달 (Common.dialog) : 브라우저 기본 alert/confirm 대신. 건물 상세의 취약 가구 모달(map.css .modal)과 같은 톤 */
+.dlg-bg {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.6);
+  opacity: 0; transition: opacity .15s;
+}
+.dlg-bg.open { opacity: 1; }
+.dlg {
+  width: min(420px, calc(100vw - 32px));
+  background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 16px 48px rgba(0,0,0,.6);
+  transform: translateY(8px); transition: transform .15s;
+}
+.dlg-bg.open .dlg { transform: none; }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px 14px; border-bottom: 1px solid var(--line); }
+.dlg-head h3 { font-size: 16px; font-weight: 700; }
+.dlg-x { width: 28px; height: 28px; margin-right: -6px; border: 0; background: none; color: var(--text-2); font-size: 20px; line-height: 1; cursor: pointer; }
+.dlg-x:hover { color: var(--text); }
+.dlg-body { padding: 18px 22px; font-size: 13px; line-height: 1.6; color: var(--text-2); }
+.dlg-body b { color: var(--text); font-weight: 500; }
+.dlg-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 22px 16px; }
+.dlg-foot .btn { min-width: 80px; }
+/* 모달 안 정보 상자 (예: 저장일 · 점수) */
+.dlg-info { display: flex; flex-direction: column; gap: 4px; margin: 0 0 14px; padding: 12px 14px; background: var(--bg-card); border-left: 2px solid var(--primary); }
+.dlg-info .t { color: var(--text); font-size: 13.5px; font-weight: 700; }
+.dlg-info .s { font-size: 12px; color: var(--text-2); }
+
+/* 지도 확대 · 축소 버튼 (메인 지도 · 현장확인 상세 · 리스트 수정 공통). 네이버 기본 컨트롤은 모두 끄고 이것만 쓴다
+   위치(right/top/bottom)는 화면별 css 에서 */
+.map-ctrl {
+  position: absolute; z-index: 10;
+  display: flex; flex-direction: column;
+  background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden;
+}
+.map-ctrl button { width: 36px; height: 36px; border: 0; background: none; color: var(--text); font-size: 18px; cursor: pointer; }
+.map-ctrl button:hover { background: var(--bg-hover); }

@@ -2,7 +2,7 @@
 
 .login-page {
   display: grid;
-  grid-template-columns: 44% 56%;
+  grid-template-columns: 640px 1fr;
   min-height: 100vh;
 }
 
@@ -11,23 +11,23 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 160px 72px 64px;
-  background: var(--bg-panel);
+  padding: 155px 72px 64px;
+  background: var(--bg-card);
   border-right: 1px solid var(--line);
 }
-.login-logo { font-size: 40px; }
-.login-sub { margin-top: 22px; font-size: 18px; font-weight: 700; }
+.login-logo { font-size: 41px; line-height: 1.2; }
+.login-sub { margin-top: 13px; font-size: 18px; font-weight: 700; }
 .login-desc {
-  margin-top: 14px;
-  max-width: 420px;
+  margin-top: 10px;
+  max-width: 560px;
   line-height: 1.6;
   color: var(--text-2);
 }
-.login-points { margin-top: 44px; }
+.login-points { margin-top: 37px; }
 .login-points li {
   position: relative;
   padding-left: 24px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   color: var(--text);
 }
 .login-points li::before {
@@ -45,20 +45,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 40px 40px 84px;
   background: var(--bg);
 }
 .login-form { width: 100%; max-width: 400px; }
 .login-form h2 { font-size: 24px; font-weight: 700; }
-.login-form .desc { margin: 14px 0 26px; color: var(--text-2); }
+.login-form .desc { margin: 12px 0 17px; color: var(--text-2); }
 .login-form label { display: block; margin-bottom: 8px; }
-.login-form .field { margin-bottom: 20px; }
+.login-form .field { height: 40px; margin-bottom: 20px; background: var(--bg-panel); }
 
+.login-options .chk { display: inline-flex; margin: 0; }
 .login-options {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: -4px 0 20px;
+  height: 16px;
+  margin: 0 0 19px;
   font-size: 13px;
 }
 .login-error {
@@ -66,15 +68,15 @@
   font-size: 13px;
   color: var(--danger);
 }
-.login-form .btn-block { height: 46px; font-size: 15px; }
+.login-form .btn-block { height: 44px; font-size: 13px; }
 
 .login-hint {
   margin-top: 16px;
-  padding: 14px 18px;
-  background: var(--bg-panel);
+  padding: 11px 18px;
+  background: var(--bg-card);
   border-radius: var(--radius);
   font-size: 12px;
-  line-height: 1.9;
+  line-height: 22px;
   color: var(--text-2);
 }
 

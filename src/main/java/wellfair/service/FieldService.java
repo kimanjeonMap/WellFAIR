@@ -1,10 +1,13 @@
 package wellfair.service;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import wellfair.dao.FieldDAO;
 import wellfair.to.ArchiveRowTO;
@@ -21,6 +24,8 @@ import wellfair.to.FieldListTO;
 public class FieldService {
 
 	public static final double WALK_KMH = 4, CAR_KMH = 20, TRANSIT_KMH = 15;
+	/** 리스트 이름 길이 한도 = survey_list.title VARCHAR(100) (15단계 D-11) */
+	public static final int TITLE_MAX = 100;
 
 	/** move_mode → 평균속도 (모르는 값은 도보) */
 	public static double speedOf(String moveMode) {
@@ -71,18 +76,24 @@ public class FieldService {
 	 * 리스트 저장 (제목 + 건물 순서). surveyId 0 이면 새로 만든다. 저장된 surveyId 리턴 (내 리스트가 아니면 0).
 	 * 확인 기록이 있는 항목은 목록에서 빠져도 남는다(FK).
 	 * 한 리스트 = 한 구 : 다른 구 건물이 섞이면 IllegalArgumentException (메시지를 화면에 그대로 띄운다)
+	 * 빈 제목 = 자동 이름 "새 리스트N" (기존 리스트는 원래 이름 유지). 100자 초과 · 내 보관함이 아닌 factorId 도 IllegalArgumentException. 트랜잭션이라 걸리면 빈 리스트가 남지 않는다 (15단계 D-10·11)
 	 */
+	@Transactional
 	public long saveField(long userId, String userGu, long surveyId, String title, String moveMode, List<Long> factorIds) {
 		List<Long> ids = factorIds == null ? new ArrayList<>() : factorIds;
 		FieldListTO old = surveyId > 0 ? dao.getField(surveyId, userId, userGu) : null;
 		if (surveyId > 0 && old == null) return 0;
+		/* 이름을 비워 두면 : 새 리스트 = "새 리스트N" 자동, 기존 리스트 = 원래 이름 유지 */
+		String name = cleanTitle(title);
+		if (name.isEmpty()) name = old != null && old.getTitle() != null && !old.getTitle().isEmpty() ? old.getTitle() : nextAutoTitle(userId);
+		assertMine(userId, ids);
 		String listGu = oneGu(userGu, old == null ? null : old.getSggCd(), ids);
 
 		FieldListTO f = new FieldListTO();
 		f.setUserId(userId);
 		f.setSggCd(listGu);
 		f.setMoveMode(moveModeOf(moveMode));       // null 이면 새 리스트 WALK / 기존 값 유지
-		f.setTitle(title == null || title.isBlank() ? "새 현장확인 리스트" : title.trim());
+		f.setTitle(name);
 		if (surveyId <= 0) {
 			dao.addField(f);
 			surveyId = f.getSurveyId();
@@ -97,8 +108,49 @@ public class FieldService {
 		return surveyId;
 	}
 
-	// 보관함에서 "현장확인 리스트에 저장" : 기존 항목 뒤에 붙인다 (surveyId 0 = 새 리스트). 다른 구 건물이면 IllegalArgumentException
+	/**
+	 * 리스트 삭제. 1 = 지움 / 0 = 내 리스트가 아님 / -1 = 현장 확인 기록이 있어서 남김 (05 이력 보호)
+	 */
+	public int deleteField(long userId, String userGu, long surveyId) {
+		if (dao.getField(surveyId, userId, userGu) == null) return 0;
+		if (dao.countFieldRecords(surveyId) > 0) return -1;
+		return dao.deleteField(surveyId, userId) > 0 ? 1 : 0;
+	}
+
+	/** 리스트 이름 : 앞뒤 공백 정리 (비어 있으면 "" → 호출한 쪽에서 자동 이름), TITLE_MAX 넘으면 안내 (15단계 D-11) */
+	static String cleanTitle(String title) {
+		String t = title == null ? "" : title.trim();
+		if (t.length() > TITLE_MAX) throw new IllegalArgumentException("리스트 이름은 " + TITLE_MAX + "자까지 입력할 수 있습니다.");
+		return t;
+	}
+
+	/** 자동 이름 앞부분. "새 리스트1", "새 리스트2" … */
+	public static final String AUTO_TITLE = "새 리스트";
+
+	/** 내 리스트 이름 중 "새 리스트N" 에서 안 쓰인 가장 작은 N (1부터). 새 리스트1 이 있으면 새 리스트2 */
+	String nextAutoTitle(long userId) {
+		Set<Integer> used = new HashSet<>();
+		for (String t : dao.getAutoTitles(userId, AUTO_TITLE)) {       // title LIKE '새 리스트%'
+			if (t == null || !t.trim().startsWith(AUTO_TITLE)) continue;
+			String rest = t.trim().substring(AUTO_TITLE.length()).trim();
+			if (rest.matches("\\d{1,6}")) used.add(Integer.parseInt(rest));
+		}
+		int n = 1;
+		while (used.contains(n)) n++;
+		return AUTO_TITLE + n;
+	}
+
+	/** 담으려는 factorId 가 전부 내 보관함 것인지. 하나라도 아니면 IllegalArgumentException (15단계 D-10, 남의 건물 · 없는 id) */
+	private void assertMine(long userId, List<Long> factorIds) {
+		if (factorIds == null || factorIds.isEmpty()) return;
+		int distinct = new HashSet<>(factorIds).size();
+		if (dao.countMyFactors(userId, factorIds) != distinct) throw new IllegalArgumentException("내 보관함 건물만 담을 수 있습니다.");
+	}
+
+	// 보관함에서 "현장확인 리스트에 저장" : 기존 항목 뒤에 붙인다 (surveyId 0 = 새 리스트). 다른 구 · 남의 건물이면 IllegalArgumentException
+	@Transactional
 	public long addItems(long userId, String userGu, long surveyId, List<Long> factorIds) {
+		assertMine(userId, factorIds);
 		FieldListTO old = surveyId > 0 ? dao.getField(surveyId, userId, userGu) : null;
 		if (surveyId > 0 && old == null) return 0;
 		List<Long> ids = new ArrayList<>();
@@ -110,7 +162,7 @@ public class FieldService {
 			FieldListTO f = new FieldListTO();
 			f.setUserId(userId);
 			f.setSggCd(listGu);
-			f.setTitle("새 현장확인 리스트");
+			f.setTitle(nextAutoTitle(userId));
 			dao.addField(f);
 			surveyId = f.getSurveyId();
 		} else if (old.getSggCd() == null && listGu != null) {

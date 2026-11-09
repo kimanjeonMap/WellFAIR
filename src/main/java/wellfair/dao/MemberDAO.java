@@ -20,6 +20,11 @@ public class MemberDAO {
 		return session.selectOne("mapper-member.getMemberByLoginId", loginId);
 	}
 
+	// user_id 로 사용자 1명 (없으면 null)
+	public MemberTO getMember(long userId) {
+		return session.selectOne("mapper-member.getMember", userId);
+	}
+
 	// 같은 구 사용자 목록 (sggCd 없으면 전체)
 	public List<MemberTO> getUserList(String sggCd) {
 		return session.selectList("mapper-member.getUserList", sggCd);

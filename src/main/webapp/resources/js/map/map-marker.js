@@ -184,17 +184,33 @@ window.MapMarker = (function () {
     [prev, bldId].forEach(function (id) { var m = id && pinById[id]; if (m) drawPin(m); });
   }
 
+  /* 구 색 : 구가 여럿이면 "위험 N곳" 많은 순으로 빨강 → 주황 → 노랑 → 초록 (구마다 항상 다른 색, 동점은 sgg_cd 순)
+   * 구가 하나뿐이면 (구청 계정) 비교할 구가 없으니 GU_LEVELS 건수 구간 색 */
+  var GU_RANK_KEYS = ['red', 'orange', 'yellow', 'green'];
+  function guColors(list) {
+    var out = {};
+    if (list.length <= 1) {
+      list.forEach(function (g) { out[g.sggCd] = C.COLORS[guLevelOf(g.riskCount).key]; });
+      return out;
+    }
+    list.slice().sort(function (a, b) { return (b.riskCount - a.riskCount) || String(a.sggCd).localeCompare(String(b.sggCd)); })
+      .forEach(function (g, i) { out[g.sggCd] = C.COLORS[GU_RANK_KEYS[Math.min(i, GU_RANK_KEYS.length - 1)]]; });
+    return out;
+  }
+
   /* ---------- 구 경계 + 라벨 (gu 모드에서만) ---------- */
   function renderGu(list) {
     if (noMap()) return;
     gus.forEach(function (g) { g.polygon.setMap(null); g.label.setMap(null); });
     gus = [];
+    var colBy = guColors(list || []);
     (list || []).forEach(function (g) {
+		if (window.GU_BOUNDARY && GU_BOUNDARY[g.sggCd]) g.ring = GU_BOUNDARY[g.sggCd];
       if (!g.ring || g.ring.length < 3) return;
-      var col = C.COLORS[guLevelOf(g.riskCount).key];
+      var col = colBy[g.sggCd];
       var polygon = new naver.maps.Polygon({
         paths: g.ring.map(function (p) { return LL(p[1], p[0]); }),
-        strokeColor: col, strokeWeight: 2.5, strokeOpacity: 1, fillColor: col, fillOpacity: 0.22, zIndex: 1, clickable: true
+        strokeColor: col, strokeWeight: 4, strokeOpacity: 1, fillColor: col, fillOpacity: 0.4, zIndex: 1, clickable: true
       });
       var el = document.createElement('div');
       el.className = 'mk-inv kgu';
@@ -204,15 +220,44 @@ window.MapMarker = (function () {
       var label = new naver.maps.Marker({ position: LL(g.lat, g.lng), icon: { content: el, anchor: new naver.maps.Point(48, 48) }, zIndex: 5 });
       naver.maps.Event.addListener(polygon, 'click', function () { if (handlers.onGuClick) handlers.onGuClick(g); });
       naver.maps.Event.addListener(label, 'click', function () { if (handlers.onGuClick) handlers.onGuClick(g); });
-      gus.push({ polygon: polygon, label: label });
+      gus.push({ polygon: polygon, label: label, code: String(g.sggCd) });
     });
     guShown = false;
     showGu(handlers.mode ? handlers.mode() === 'gu' : true);
   }
-  function showGu(show) {
-    if (show === guShown) return;
+  /* 지역 선택에 따라 구 색칠 폴리곤 보이기 : 전체 구 = 3개 다, 구만 고름 = 그 구만, 동(법정동·행정동)을 고름 = 숨김. 라벨은 그대로 */
+  var guFilter = { code: '', dong: false };
+  function guVisible(g) { return !guFilter.dong && (!guFilter.code || g.code === guFilter.code); }
+  function showGu(show, force) {
+    if (show === guShown && !force) return;
     guShown = show;
-    gus.forEach(function (g) { g.polygon.setMap(show ? map : null); g.label.setMap(show ? map : null); });
+    gus.forEach(function (g) { g.polygon.setMap(show && guVisible(g) ? map : null); g.label.setMap(show && !guFilter.dong ? map : null); });   // 동을 고르면 구 원 대신 동 원
+  }
+  /* ---------- 동 집계 원 (구 원과 같은 모양 · 경계선과 같은 하늘색 테두리). 구 단위 줌에서만 ---------- */
+  var areas = [], areaShown = true;
+  function renderArea(list) {
+    if (noMap()) return;
+    areas.forEach(function (m) { m.setMap(null); });
+    areas = [];
+    (list || []).forEach(function (a) {
+      var el = document.createElement('div');
+      el.className = 'mk-inv kgu';
+      el.style.borderColor = '#00D1FF';
+      el.innerHTML = '<b>' + esc(a.name) + '</b>위험 ' + Common.num(a.riskCount) + '곳'
+        + (a.checkedCnt > 0 ? '<small>현장 확인 ' + Common.num(a.checkedCnt) + '곳</small>' : '');
+      var mk = new naver.maps.Marker({ position: LL(a.lat, a.lng), icon: { content: el, anchor: new naver.maps.Point(48, 48) }, zIndex: 6 });
+      naver.maps.Event.addListener(mk, 'click', function () { if (handlers.onAreaClick) handlers.onAreaClick(a); });
+      areas.push(mk);
+    });
+    showArea(handlers.mode ? handlers.mode() === 'gu' : true);
+  }
+  function showArea(show) {
+    areaShown = show;
+    areas.forEach(function (m) { m.setMap(show ? map : null); });
+  }
+  function filterGu(code, hasDong) {
+    guFilter = { code: code ? String(code) : '', dong: !!hasDong };
+    showGu(guShown, true);
   }
 
   /* ---------- 현장 확인됨 (9단계) ----------
@@ -241,7 +286,7 @@ window.MapMarker = (function () {
   function init(m, h) { map = m; handlers = h || {}; }
 
   return {
-    init: init, render: render, clear: clear, select: select, renderGu: renderGu, showGu: showGu, renderChecked: renderChecked,
+    init: init, render: render, clear: clear, select: select, renderGu: renderGu, showGu: showGu, filterGu: filterGu, renderArea: renderArea, showArea: showArea, renderChecked: renderChecked,
     levelOf: levelOf, clusterSvg: clusterSvg, pointSvg: pointSvg, svgUri: svgUri
   };
 })();

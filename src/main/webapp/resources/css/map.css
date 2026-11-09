@@ -1,7 +1,7 @@
 /* 취약공간 분석 지도 (Figma WellFAIR-02 계열, 다크)
    2026-11-08 설계 화면에 맞춤 : 레이어 패널을 지도 위에 뜬 카드로, 지도 위 요소 간격 12/24 */
 
-:root { --lp-gap: 12px; --lp-w: 300px; --lp-right: calc(var(--lp-gap) * 2 + var(--lp-w)); /* 324px : 패널 오른쪽 + 12 */ }
+:root { --wp-w: 320px; --lp-gap: 12px; --lp-w: 300px; --lp-right: calc(var(--lp-gap) * 2 + var(--lp-w)); /* 324px : 패널 오른쪽 + 12 */ }
 
 .map-layout {
   position: relative;
@@ -111,7 +111,7 @@
   /* 패널 카드 안에 있으므로 카드 기준 : 카드 오른쪽 12px, 아래 맞춤 (설계 x=324) */
   left: calc(100% + 13px); bottom: -1px;
   max-height: calc(100vh - var(--header-h) - 24px); overflow: auto;
-  width: 294px;
+  width: var(--wp-w);
   padding: 16px 15px;
   background: var(--bg-panel);
   border: 1px solid var(--line);
@@ -120,20 +120,19 @@
   z-index: 20;
 }
 .weight-pop.open { display: block; }
-.wp-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; white-space: nowrap; }
-.wp-head b { font-size: 15px; margin-right: auto; }
+.wp-head { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; white-space: nowrap; }
+.wp-head b { font-size: 14px; font-weight: 700; margin-right: auto; }
+.wp-head .link-muted { font-size: 12px; }
 .wp-head button { background: none; border: 0; cursor: pointer; }
 .wp-close { font-size: 20px; color: var(--text-2); }
-.wp-sum { font-size: 12px; color: var(--text-2); }
-.wp-sum b { color: var(--text); }
-.wp-sum b.bad { color: var(--danger); }
-.wp-row { display: grid; grid-template-columns: 1fr auto; align-items: center; row-gap: 8px; padding: 10px 0 6px; border-top: 1px solid var(--line-soft); font-size: 13px; }
-.wp-row .wp-name { font-size: 14px; font-weight: 700; }
-.wp-row .wp-name small { display: block; margin-top: 2px; font-size: 11px; font-weight: 400; color: var(--text-3); }
-.wp-row > b { padding: 2px 8px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; min-width: 48px; text-align: center; }
+/* 한 줄 = 묶음 이름(+ 요인 작게) · 점수 상자, 아래 슬라이더 (피그마 02 가중치 조정 열림) */
+.wp-row { display: grid; grid-template-columns: 1fr auto; align-items: center; row-gap: 10px; padding: 12px 0 8px; font-size: 13px; }
+.wp-row .wp-name { font-size: 12.5px; font-weight: 400; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wp-row .wp-name small { margin-left: 4px; font-size: 11px; color: var(--text-2); }
+.wp-row > b { height: 22px; line-height: 20px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; font-weight: 700; min-width: 48px; text-align: center; }
 .wp-row input { grid-column: 1 / -1; width: 100%; }
 .wp-row.locked .wp-name, .wp-row.locked > b { color: var(--text-3); }
-.wp-note { margin-top: 8px; font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
+.wp-note { margin: 10px 0 0; font-size: 11px; line-height: 1.55; color: var(--text-3); }   /* 점수 규칙 안내 (15단계 B-7) */
 
 /* 패널 접기 손잡이 */
 .side-toggle {
@@ -173,7 +172,7 @@
 }
 .map-top > * { pointer-events: auto; }
 .map-layout.left-closed .map-top, .map-layout.left-closed .map-legend { left: 12px; }
-.map-top .sel { width: 130px; height: 36px; padding-left: 12px; font-size: 13px; background-color: var(--bg-panel); border-radius: var(--radius); }
+.map-top .field.sel { width: 130px; height: 36px; padding-left: 12px; font-size: 13px; background-color: var(--bg-panel); border-radius: var(--radius); }
 .status-chips { display: flex; gap: 6px; margin-left: 6px; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
@@ -182,30 +181,33 @@
   font-size: 12px; color: var(--text-2);
 }
 .chip b { color: var(--text); }
-.chip-toggle { cursor: pointer; margin-left: 6px; }
+.chip-toggle { cursor: pointer; margin-left: 6px; white-space: nowrap; flex-shrink: 0; }
 .chip-toggle .ck { width: 14px; height: 14px; border-radius: var(--radius); border: 1px solid var(--line); display: grid; place-items: center; font-size: 10px; color: transparent; }
 .chip-toggle.on { border-color: var(--primary); color: var(--text); }
 .chip-toggle.on .ck { background: var(--primary); border-color: var(--primary); color: #fff; }
 .chip:hover { border-color: var(--primary); color: var(--text); }
 /* 동 선택 2단계 드롭다운 (피그마 02 "동 선택 열림") : 법정동 열 → 행정동 열 */
 .dong-dd { position: relative; }
-.dong-btn { display: flex; align-items: center; justify-content: space-between; width: 150px; text-align: left; cursor: pointer; }
-.dong-btn i { font-style: normal; font-size: 10px; color: var(--text-3); }
+.dong-btn { display: flex; align-items: center; justify-content: space-between; width: 130px; padding: 0 12px; font-size: 13px; text-align: left; background-color: var(--bg-panel); border-radius: var(--radius); cursor: pointer; }
+.dong-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dong-btn i { font-style: normal; font-size: 8px; color: var(--text-2); margin-left: 6px; }
 .dong-dd.open .dong-btn { border-color: var(--primary); }
 .dm-menu { display: none; position: absolute; left: 0; top: 40px; }
 .dong-dd.open .dm-menu { display: block; }
+/* 동 선택 열림 (피그마 02) : 법정동 열 167 → 6px 띄워 행정동 열 156. 고른 줄 = 짙은 파랑 + 왼쪽 2px 메인 컬러 */
 .dm-col {
-  position: absolute; left: 0; top: 0; width: 168px; max-height: 430px; overflow-y: auto; padding: 6px 0;
-  background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius);
+  position: absolute; left: 0; top: 0; width: 167px; max-height: 430px; overflow-y: auto; padding: 7px 0;
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
 }
-.dm-sub { left: 172px; }
-.dm-row { display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 10px 0 14px; cursor: pointer; font-size: 13px; color: var(--text-2); white-space: nowrap; }
+.dm-sub { left: 172px; width: 156px; }
+.dm-row { display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 12px 0 14px; cursor: pointer; font-size: 13px; color: var(--text); white-space: nowrap; }
+.dm-sub .dm-row + .dm-row { margin-top: 2px; }
 .dm-row small { color: var(--text-3); font-size: 11px; margin-left: 6px; }
 .dm-row i { font-style: normal; color: var(--text-3); }
-.dm-row:hover, .dm-row.hover { background: var(--bg-hover); color: var(--text); }
-.dm-row.sel { background: #1f2d44; color: var(--text); }
-.dm-all { border-bottom: 1px solid var(--line-soft); margin-bottom: 4px; }
+.dm-row:hover, .dm-row.hover { background: var(--bg-hover); }
+.dm-row.sel { background: #243244; box-shadow: inset 2px 0 0 var(--primary); }
+.dm-all { color: var(--text-2); }
 
 /* 구청 계정 관할 밖 안내 띠 (11단계) */
 .out-bar {
@@ -218,18 +220,21 @@
 .out-bar b { color: var(--warn); }
 .out-bar .btn { height: 28px; padding: 0 12px; font-size: 12px; }
 
-/* [이 지역에서 재검색] : 분석 뒤 지도를 옮기면 뜬다 */
+/* [이 지역에서 재검색] : 분석 뒤 지도를 옮기면 뜬다. 좌우 패널이 열리든 닫히든 늘 브라우저 화면 정중앙 (fixed).
+   bottom 은 map-main.js placeRefetch 가 범례 위로 맞춤 */
 .btn-refetch {
-  position: absolute; left: 50%; top: 68px; transform: translateX(-50%); z-index: 10;
-  display: none; align-items: center; gap: 6px; height: 34px; padding: 0 16px; border-radius: 17px;
+  position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%); z-index: 10;
+  display: none; align-items: center; gap: 6px; height: 38px; padding: 0 18px; border-radius: 19px;
   border: 1px solid var(--primary); background: var(--bg-panel); color: var(--text); font-size: 13px; cursor: pointer;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .45);
 }
 .btn-refetch.show { display: inline-flex; }
 .btn-refetch:hover { background: var(--primary); }
 
-.map-top .search { margin-left: auto; position: relative; width: 280px; }
-.map-top .search .field { height: 36px; padding-left: 30px; padding-right: 12px; font-size: 13px; background: var(--bg-panel); }
+.map-top .search { margin-left: auto; margin-right: 64px; position: relative; width: 280px; }   /* 오른쪽 끝에서 조금 왼쪽으로 */
+.map-top .search .field { height: 36px; padding-left: 30px; padding-right: 36px; font-size: 13px; background: var(--bg-panel); }
+.search-clear { position: absolute; right: 2px; top: 2px; width: 32px; height: 32px; border: 0; background: none; color: var(--text-2); font-size: 18px; line-height: 1; cursor: pointer; }
+.search-clear:hover { color: var(--text); }
 /* 돋보기는 설계처럼 왼쪽 */
 .search-btn { position: absolute; left: 2px; top: 2px; width: 32px; height: 32px; border: 0; background: none; color: var(--text-2); font-size: 18px; cursor: pointer; }
 
@@ -247,7 +252,7 @@
 .map-legend b { color: var(--text); }
 .map-legend > b { position: absolute; left: 13px; top: 11px; font-size: 12.5px; font-weight: 500; }
 /* 가중치 조정 팝업이 열리면 범례를 팝업 오른쪽으로 비켜 둠 */
-.map-layout:has(.weight-pop.open) .map-legend { left: calc(var(--lp-right) + 294px + 12px); }
+.map-layout:has(.weight-pop.open) .map-legend { left: calc(var(--lp-right) + var(--wp-w) + 12px); }
 .map-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
 .map-legend .sw { width: 22px; height: 12px; border-radius: 0; }
 .map-legend img { display: block; filter: invert(100%) hue-rotate(180deg); }
@@ -266,15 +271,8 @@
 /* 범례 안 설명 줄은 설계에서 뺐음. 다시 보이려면 display:none 을 지우세요 */
 .map-legend .lg-mode, .lg-mode { display: none; padding-left: 10px; border-left: 1px solid var(--line); color: var(--text-3); }
 
-.map-ctrl {
-  position: absolute; right: 12px; bottom: 12px;
-  display: flex; flex-direction: column;
-  background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius);
-  overflow: hidden; z-index: 10;
-}
-.map-ctrl button { width: 36px; height: 36px; border: 0; background: none; color: var(--text); font-size: 18px; cursor: pointer; }
-.map-ctrl button + button { border-top: 0; }
-.map-ctrl button:hover { background: var(--bg-hover); }
+/* 확대 · 축소 버튼 : 모양은 common.css .map-ctrl (모든 지도 공통), 여기는 위치만 */
+.map-ctrl { right: 12px; bottom: 12px; }
 
 /* 마커 (map-marker.js, 살피구로 kpin/kcl/kgu). .mk-inv 는 타일 다크 필터를 되돌린다 */
 .kpin, .kcl, .kgu { cursor: pointer; user-select: none; -webkit-user-select: none; }
@@ -311,91 +309,116 @@
 }
 
 /* ---------- 오른쪽 패널 ---------- */
+/* 지도 위에 덮는다 : 지도 크기가 안 바뀌어야 여닫을 때 지도가 움찔하지 않는다 (2026-11-08) */
 .right-panel {
-  width: 400px; flex: 0 0 400px;
-  margin-right: -400px;
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 20;
+  width: 400px;
   display: flex; flex-direction: column;
   background: var(--bg-panel);
   border-left: 1px solid var(--line);
-  transition: margin-right .26s ease;
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform .26s ease, visibility 0s linear .26s;
 }
-.right-panel.open { margin-right: 0; }
+.right-panel.open { transform: none; visibility: visible; transition: transform .26s ease, visibility 0s; }
+/* 패널이 열리면 지도 위 오른쪽 요소들을 패널 왼쪽으로 비켜 준다 */
+.map-top, .map-ctrl { transition: left .26s ease, right .26s ease; }
+.out-bar { transition: left .26s ease; }
+.map-layout:has(.right-panel.open) .map-top,
+.map-layout:has(.right-panel.open) .map-ctrl { right: 412px; }
+/* .btn-refetch 는 여기서 비키지 않는다 : fixed 로 늘 브라우저 화면 정중앙 */
+.map-layout:has(.right-panel.open) .out-bar { left: calc(50% - 200px); }
+.map-layout:has(.right-panel.open) .map-legend { max-width: calc(100% - var(--lp-right) - 72px - 400px); }
 .rp-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-.rp-head { display: flex; align-items: center; gap: 8px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
-.rp-head h2 { font-size: 16px; font-weight: 700; flex: 1; }
+.rp-head { display: flex; align-items: center; gap: 8px; height: 52px; flex: 0 0 52px; padding: 0 22px 0 24px; border-bottom: 1px solid #323338; }
+.rp-head h2 { font-size: 15px; font-weight: 700; flex: 1; }
 .rp-close, .rp-back { background: none; border: 0; color: var(--text-2); font-size: 22px; cursor: pointer; line-height: 1; }
 .rp-back { font-size: 24px; margin-left: -6px; }
 
-/* 결과 리스트 */
-.rs-scope { padding: 10px 20px 0; font-size: 12px; color: var(--primary); }
-.rs-bar { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px 10px; }
-.rs-count { font-size: 14px; color: var(--text-2); }
-.rs-count b { font-size: 26px; color: var(--text); margin-right: 2px; }
-.sel-sm { height: 32px; width: auto; font-size: 12px; padding: 0 8px; background: var(--bg-panel); border-color: transparent; }
+/* 결과 리스트 (피그마 02-1) : 줄 높이 54, 점수 막대 58 = 어두운 트랙 + 메인 컬러 */
+.rs-scope { padding: 14px 24px 0; font-size: 12px; color: var(--primary); }
+.rs-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px 12px 24px; }
+.rs-count { font-size: 13px; color: var(--text-2); }
+.rs-count b { font-size: 26px; font-weight: 700; color: var(--text); margin-right: 4px; }
+.sel-sm { height: 32px; width: auto; font-size: 12px; padding: 0 22px 0 8px; background-color: var(--bg-panel); border-color: transparent; }
 .rs-list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
 .rs-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 10px;
-  border-radius: var(--radius);
-  border-left: 3px solid transparent;
+  display: flex; align-items: center; gap: 14px;
+  height: 54px; padding: 0 12px 0 13px;
+  border-left: 2px solid transparent;
   cursor: pointer;
 }
 .rs-row:hover { background: var(--bg-hover); }
-.rs-row.sel { background: var(--bg-card); border-left-color: var(--primary); }
-.rs-rank { width: 22px; text-align: center; font-weight: 700; color: var(--text-2); }
+.rs-row.sel { background: #1b2432; border-left-color: var(--primary); }
+.rs-rank { width: 20px; text-align: center; font-size: 13px; font-weight: 700; color: var(--text-2); }
 .rs-row.sel .rs-rank { color: var(--primary); }
 .rs-body { flex: 1; min-width: 0; }
-.rs-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rs-sub { font-size: 12px; color: var(--text-2); margin-top: 3px; }
-.rs-hh { margin-left: 8px; padding: 1px 6px; border-radius: 3px; background: var(--bg-card); color: var(--text-3); font-size: 11px; }
-.rs-score { width: 56px; text-align: right; }
-.rs-score b { font-size: 16px; }
-.rs-score i { display: block; height: 3px; margin-top: 4px; border-radius: 2px; }
+.rs-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-sub { font-size: 11px; color: var(--text-2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rs-hh { margin-left: 8px; padding: 0 6px; border-radius: var(--radius); background: var(--bg-card); color: var(--text-2); font-size: 10.5px; }
+.rs-score { width: 58px; text-align: right; }
+.rs-score b { font-size: 15px; font-weight: 700; }
+.rs-score .rs-under { display: block; font-size: 10px; line-height: 1; margin-top: 2px; color: var(--text-3); font-style: normal; }   /* 검색 결과의 기준 미만 (15단계 C-9) */
+.rs-score .rs-track { display: block; height: 3px; margin-top: 6px; background: var(--line-soft); }
+.rs-score .rs-track i { display: block; height: 100%; background: var(--primary); }
 .rs-more { margin: 0 12px 12px; height: 36px; border: 1px solid var(--line); border-radius: var(--radius); background: none; color: var(--text-2); cursor: pointer; }
 .rs-more:hover { background: var(--bg-hover); }
 .rs-empty { padding: 30px 12px; text-align: center; color: var(--text-3); font-size: 13px; line-height: 1.6; }
 
 /* 건물 상세 */
-.d-title-wrap { padding: 16px 20px 12px; border-bottom: 1px solid var(--line); }
+/* 피그마 02-2 : 좌우 24, 섹션 사이 가는 선(#26272b), 섹션 제목 13px */
+.d-title-wrap { margin: 0 24px; padding: 14px 0 14px; border-bottom: 1px solid var(--line-soft); }
 .d-title-wrap h3 { font-size: 17px; font-weight: 700; }
 .d-sub { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--text-2); }
-.d-checked { padding: 4px 10px; border-radius: var(--radius); background: var(--primary); color: #fff; font-size: 11px; white-space: nowrap; }
+.d-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.d-checked { flex: 0 0 auto; margin-top: 2px; padding: 3px 10px; border-radius: var(--radius); background: var(--primary); color: #fff; font-size: 11px; line-height: 16px; white-space: nowrap; }
+.d-hist { flex: 0 0 auto; height: 28px; padding: 0 14px; font-size: 12px; font-weight: 600; }
 .d-score { margin-top: 8px; font-size: 13px; color: var(--text-2); }
 .d-score b { font-size: 20px; color: var(--text); margin-left: 4px; }
 .d-tabs { display: flex; border-bottom: 1px solid var(--line); }
 .d-tab { flex: 1; height: 40px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--text-2); font-weight: 600; cursor: pointer; }
 .d-tab.active { color: var(--text); border-bottom-color: var(--primary); }
-.d-body { flex: 1; overflow-y: auto; padding: 6px 20px 16px; }
-.d-body h4 { font-size: 13px; font-weight: 700; margin: 16px 0 8px; }
+.d-body { flex: 1; overflow-y: auto; padding: 0 24px 20px; }
+.d-body > h4 { font-size: 13px; font-weight: 500; margin: 18px 0 10px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+.d-body > h4:first-child { border-top: 0; padding-top: 0; }
 .d-hint { font-weight: 400; font-size: 11px; color: var(--text-3); margin-left: 6px; }
-.sc-row { display: grid; grid-template-columns: 1fr 90px; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; }
-.sc-label .sc-pt { color: var(--primary); margin-right: 6px; }
-.sc-label small { color: var(--text-3); font-weight: 400; }
-.sc-row.miss .sc-label .sc-pt { color: var(--text-3); }
-.sc-row.miss { color: var(--text-3); }
-.sc-bar { height: 5px; background: var(--bg-card); border-radius: 3px; overflow: hidden; }
+/* 점수 구성 한 줄 : 이름(+ 근거 작게) · 막대 110 · 점수 */
+.sc-row { display: grid; grid-template-columns: 1fr 110px 34px; align-items: center; gap: 12px; height: 26px; font-size: 12.5px; }
+.sc-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-label small { color: var(--text-2); font-size: 11px; margin-left: 2px; }
+.sc-row.miss { color: var(--text-2); }
+.sc-bar { height: 5px; background: var(--line-soft); border-radius: 0; overflow: hidden; }
 .sc-bar i { display: block; height: 100%; background: var(--primary); }
 .sc-row.miss .sc-bar i { background: var(--line); }
-.sc-pt { text-align: right; }
+.sc-pt { text-align: right; font-size: 12px; font-weight: 700; }
+.sc-row.miss .sc-pt { font-weight: 400; color: var(--text-3); }
 .d-resident-summary { font-size: 13px; line-height: 1.6; color: var(--text-2); }
 .d-resident-summary b { color: var(--text); }
-.pri-badge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: var(--radius); background: var(--bg-card); color: var(--warn); font-size: 11px; }
-.d-info { width: 100%; border-collapse: collapse; font-size: 13px; }
-.d-info th, .d-info td { padding: 8px 12px; border: 1px solid var(--line); text-align: left; }
-.d-info th { width: 96px; background: var(--bg-card); color: var(--text-2); font-weight: 500; }
-.d-memo { height: auto; padding: 10px 12px; resize: vertical; }
-.d-foot { display: flex; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--line); }
-.d-foot .btn { flex: 1; height: 42px; }
-.d-foot .btn-line { flex: 0 0 120px; }
+/* 건축물대장 표 : 바깥 테두리 #3a3a40, 안쪽 선 #26272b, 줄 높이 36 */
+.d-info { width: 100%; border-collapse: collapse; font-size: 12.5px; border: 1px solid var(--line); }
+.d-info th, .d-info td { height: 36px; padding: 0 14px; border-top: 1px solid var(--line-soft); text-align: left; }
+.d-info tr:first-child th, .d-info tr:first-child td { border-top: 0; }
+.d-info th { width: 96px; background: var(--bg-card); color: var(--text-2); font-weight: 400; border-right: 1px solid var(--line-soft); }
+/* 복지 사각 : 가장 가까운 시설과 거리 */
+.welf-box { border: 1px solid var(--line); }
+.welf-row { display: grid; grid-template-columns: 82px 1fr auto; align-items: center; gap: 10px; height: 36px; padding: 0 14px; font-size: 12.5px; }
+.welf-row + .welf-row { border-top: 1px solid var(--line-soft); }
+.welf-k { color: var(--text-2); }
+.welf-nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.welf-d { font-weight: 700; }
+.d-memo { height: auto; padding: 10px 12px; font-size: 12.5px; background: var(--bg-panel); resize: vertical; }
+.d-foot { display: flex; gap: 8px; padding: 15px 24px 23px; border-top: 1px solid #323338; }
+.d-foot .btn { flex: 1; height: 40px; font-size: 14px; }
+.d-foot .btn-line { flex: 0 0 124px; border-color: var(--line); font-weight: 500; }
 .d-privacy { margin: 12px 0; padding: 10px 12px; background: var(--bg-card); border-radius: var(--radius); font-size: 12px; line-height: 1.6; color: var(--text-2); }
 
 /* 거주 취약 가구 상자 (02-2) */
-.vuln-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--radius); }
+.vuln-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 13px 13px 13px; background: var(--bg-panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .vuln-box > div { flex: 1 1 auto; min-width: 0; }
-.vuln-box b { display: block; font-size: 14px; margin-bottom: 4px; }
-.vuln-box b small { font-size: 12px; font-weight: 400; color: var(--text-2); }
-.vuln-box .muted { font-size: 12px; }
-.vuln-box .btn { flex: 0 0 auto; white-space: nowrap; height: 32px; padding: 0 10px; font-size: 12px; }
+.vuln-box b { display: block; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.vuln-box b small { font-size: 11px; font-weight: 400; color: var(--text-2); }
+.vuln-box .muted { font-size: 11.5px; color: var(--text-2); }
+.vuln-box .btn { flex: 0 0 auto; white-space: nowrap; height: 30px; padding: 0 12px; font-size: 12px; font-weight: 500; border-color: var(--line); }
 
 /* 취약 가구 정보 모달 (02-2-1) */
 .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; align-items: center; justify-content: center; }
@@ -411,6 +434,10 @@
 .rm-tbl th { background: var(--bg-card); color: var(--text-2); font-weight: 500; text-align: left; padding: 11px 14px; font-size: 12.5px; }
 .rm-tbl td { padding: 15px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 .rm-tbl .rm-flr { font-weight: 700; font-size: 15px; }
+/* 순위 + 가점 (12단계) : "1  42점", 가점에 올리면 내역 툴팁 */
+.rm-tbl .rm-rank { white-space: nowrap; width: 64px; }
+.rm-tbl .rm-rank b { font-size: 14px; font-weight: 700; margin-right: 6px; }
+.rm-tbl .rm-rank small { font-size: 11px; color: var(--text-2); border-bottom: 1px dotted var(--text-3); cursor: help; }
 .rm-tbl .tag { margin-right: 4px; }
 .tag.benefit { border-style: dashed; color: var(--text-3); background: transparent; }
 .rm-legend { margin: -4px 0 10px; font-size: 11px; }

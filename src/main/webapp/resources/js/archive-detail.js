@@ -23,6 +23,12 @@ $(function () {
   function open(sel) { $(sel).slideDown(150); $('html, body').animate({ scrollTop: $(sel).offset().top - 80 }, 200); }
   $(document).on('click', '[data-close]', function () { $($(this).data('close')).slideUp(120); });
 
+  /* 방문 일시는 지금까지만 고를 수 있다 (15단계 D-12. 미래 시각 · 이상한 형식은 서버도 막는다) */
+  (function () {
+    var d = new Date();
+    $('#visitedAt').attr('max', d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()));
+  })();
+
   /* 현장 확인 결과 입력 */
   $('#btnCheckForm').on('click', function () {
     var $f = $('#checkForm');
@@ -53,7 +59,9 @@ $(function () {
   $('#btnMemo').on('click', function () { open('#memoForm'); $('#memoText').trigger('focus'); });
   $('#btnHandover').on('click', function () { open('#memoForm'); $('#memoTo').trigger('focus'); if (!$('#memoText').val()) $('#memoText').val('담당자 변경(인수인계). '); });
   $('#memoForm').on('submit', function () {
-    if (!$.trim($('#memoText').val())) { Common.toast('메모 내용을 입력하세요.'); return false; }
+    var v = $.trim($('#memoText').val());
+    if (!v) { Common.toast('메모 내용을 입력하세요.'); return false; }
+    if (v.length > 500) { Common.toast('메모는 500자까지 입력할 수 있습니다.'); return false; }   // handover_memo.memo VARCHAR(500)
   });
 
   /* 재확인 요청 드롭다운 (보관함과 같은 방식) */

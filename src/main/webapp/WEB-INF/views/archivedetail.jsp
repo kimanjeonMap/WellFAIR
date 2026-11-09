@@ -84,14 +84,13 @@
     <section>
       <div class="ad-sec-head">
         <h2>확인 이력 타임라인</h2>
+        <button type="button" class="btn btn-primary btn-sm ad-add" id="btnCheckForm">＋ 현장 확인 결과 입력</button>
         <div class="seg" id="tlFilter">
           <button type="button" data-f="all" class="on">전체</button>
           <button type="button" data-f="yes">요인 맞음</button>
           <button type="button" data-f="no">요인 아님</button>
         </div>
       </div>
-
-      <button type="button" class="btn btn-primary ad-add" id="btnCheckForm">＋ 현장 확인 결과 입력</button>
 
       <%-- 현장 체크 입력 폼 → POST archivecheck.do (visit_history + survey_record) --%>
       <form class="card ad-form" id="checkForm" method="post" action="${ctx}/archivecheck.do" style="display:none">
@@ -191,7 +190,7 @@
             <option value="">받는 담당자 (선택)</option>
             <c:forEach var="u" items="${users}"><c:if test="${u.userId != me.userId}"><option value="${u.userId}"><c:out value="${u.userNm}"/> <c:out value="${u.rankNm}"/> · <c:out value="${u.deptNm}"/></option></c:if></c:forEach>
           </select>
-          <textarea class="field" name="memo" id="memoText" rows="3" placeholder="예) 배수구 막힘은 주택과에 사진과 함께 전달했습니다." style="height:auto;padding:8px 12px"></textarea>
+          <textarea class="field" name="memo" id="memoText" rows="3" maxlength="500" placeholder="예) 배수구 막힘은 주택과에 사진과 함께 전달했습니다. (500자까지)" style="height:auto;padding:8px 12px"></textarea>
           <div class="f-foot" style="margin-top:8px"><button type="button" class="btn btn-line btn-sm" data-close="#memoForm">취소</button><button type="submit" class="btn btn-primary btn-sm">저장</button></div>
         </form>
         <button type="button" class="btn btn-line btn-block" id="btnHandover">담당자 변경(인수인계)</button>

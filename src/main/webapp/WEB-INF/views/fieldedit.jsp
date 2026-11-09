@@ -1,7 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
-<c:set var="pageTitle" value="현장확인 리스트 수정"/>
+<c:set var="pageTitle" value="현장 확인 리스트 편집"/>
 <c:set var="pageCss" value="pages"/>
 <c:set var="activeMenu" value="field"/>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
@@ -12,7 +12,10 @@
 <%@ include file="/WEB-INF/views/include/header.jspf" %>
 
 <div class="page">
-  <div class="page-head"><h1>현장확인 리스트 ${field.surveyId > 0 ? '수정' : '만들기'}</h1></div>
+  <div class="page-head" style="margin-bottom:23px">
+    <h1>현장 확인 리스트 ${field.surveyId > 0 ? '편집' : '만들기'}</h1>
+    <div class="right"><a class="btn btn-primary" id="btnBackList" href="${ctx}/fieldlist.do">‹ 목록으로</a></div>
+  </div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
 
   <form method="post" action="${ctx}/fieldedit.do" id="editForm">
@@ -23,12 +26,12 @@
     <div class="fe-grid">
       <%-- 왼쪽 : 보관함 건물 --%>
       <div class="card">
-        <div class="card-head"><h3>보관함 건물 <span id="pickCnt">${fn:length(pickList)}</span></h3><small>체크하면 이 리스트에 담깁니다</small></div>
+        <div class="card-head"><h3>보관함 건물 <span id="pickCnt">${fn:length(pickList)}</span></h3></div>
         <div class="pick-list" id="pickList">
           <c:forEach var="p" items="${pickList}">
             <label class="pick-row" data-factor="${p.factorId}">
               <input type="checkbox" class="pick-chk" value="${p.factorId}">
-              <span><c:out value="${fn:substringAfter(fn:replace(p.addr, '서울특별시 ', ''), '구 ')}"/> <c:out value="${empty p.bldNm ? p.useNm : p.bldNm}"/></span>
+              <span class="pk-ti"><c:out value="${fn:substringAfter(fn:replace(p.addr, '서울특별시 ', ''), '구 ')}"/> <c:out value="${empty p.bldNm ? p.useNm : p.bldNm}"/></span>
               <span class="tag"><c:out value="${empty p.factorText ? '요인 없음' : fn:split(p.factorText, '·')[0]}"/><c:if test="${p.vulnHhCnt > 0}"> · 가구 ${p.vulnHhCnt}</c:if></span>
               <span class="sc">${p.score}</span>
               <span>
@@ -44,13 +47,16 @@
         </div>
       </div>
 
+      <%-- 가운데 화살표 : 보관함 건물 → 리스트에 담는 방향 --%>
+      <div class="fe-arrow" aria-hidden="true"><span>→</span><small>담기</small></div>
+
       <%-- 오른쪽 : 리스트 이름 · 순서 --%>
       <div class="card">
-        <div class="fe-title"><span>✎</span><input class="field" name="title" id="title" value="<c:out value='${field.title}'/>" placeholder="리스트 이름 (예: 가리봉동 반지하 밀집)" required></div>
+        <div class="card-head"><h3><c:out value="${empty field.title ? '새 현장확인 리스트' : field.title}"/></h3></div>
+        <div class="fe-title"><span>✎</span><input class="field" name="title" id="title" value="<c:out value='${field.title}'/>" placeholder="${field.surveyId > 0 ? '리스트 이름 (비워 두면 원래 이름 유지)' : '리스트 이름 (비워 두면 새 리스트1, 새 리스트2 … 로 저장)'}" maxlength="100"></div>
         <div class="fe-tools">
-          <label>출발지 <select class="field sel-sm" id="startSel"><option value="11530">구로구청</option><option value="11470">양천구청</option><option value="11560">영등포구청</option></select></label>
+          <label class="fe-start">출발지 <select class="field sel-sm" id="startSel"><option value="11530">구로구청</option><option value="11470">양천구청</option><option value="11560">영등포구청</option></select></label>
           <button type="button" class="btn btn-line btn-sm" id="btnOptimize" title="출발지에서 가까운 순으로 초안을 만들고 2-opt 로 교차 구간을 풀어 다시 매깁니다 (직선거리)">⇅ 최적 동선으로 정렬</button>
-          <span class="muted" style="font-size:12px">⋮⋮ 를 끌어서 순서를 바꿀 수 있어요</span>
         </div>
         <div class="fe-items" id="feItems"></div>
         <div class="fe-foot">
@@ -70,13 +76,15 @@
   <%-- 지도 : 담긴 건물 = 번호 핀 + 선, 나머지 보관함 건물 = 빈 원 (누르면 담기) --%>
   <div class="fe-map">
     <div class="nmap" id="map"></div>
+    <%-- 확대 · 축소 : 메인 지도와 같은 버튼 (네이버 기본 컨트롤은 끔) --%>
+    <div class="map-ctrl"><button type="button" id="zoomIn" title="확대">+</button><button type="button" id="zoomOut" title="축소">−</button></div>
     <div class="map-float tl"><label class="chk"><input type="checkbox" id="onlyMine"> 리스트 건물만 보기 (<span id="mineCnt">0</span>)</label></div>
     <div class="map-float bl"><span><i class="lg-dot fill"></i>리스트에 담긴 건물</span><span><i class="lg-dot"></i>담을 수 있는 보관함 건물</span></div>
-    <div class="map-float br">
-      <div><small>이동 시간 (직선거리 × 1.3)</small><span id="routeCap" class="muted" style="font-size:12px">0곳</span></div>
-      <div><small>도보</small><b id="tWalk">0</b>분</div>
-      <div><small>자동차</small><b id="tCar">0</b>분</div>
-      <div><small>대중교통</small><b id="tTransit">0</b>분</div>
+    <%@ include file="/WEB-INF/views/include/mode-icons.jspf" %>
+    <div class="map-float br rt-box" id="rtBox">
+      <div class="rt" data-mode="walk" title="도보 (4km/h)">${icoWalk}<span><small>도보</small><b id="tWalk">0</b>분</span></div>
+      <div class="rt" data-mode="transit" title="대중교통 (15km/h)">${icoTransit}<span><small>대중교통</small><b id="tTransit">0</b>분</span></div>
+      <div class="rt" data-mode="car" title="자동차 (20km/h)">${icoCar}<span><small>자동차</small><b id="tCar">0</b>분</span></div>
     </div>
   </div>
 </div>

@@ -57,10 +57,20 @@ public class FieldController {
 		return "fieldedit";
 	}
 
+	// POST fielddelete.do : listId → redirect:fieldlist.do (확인 기록이 있는 리스트는 남긴다)
+	@PostMapping("fielddelete.do")
+	public String delete(@RequestParam("listId") long listId, @RequestParam(value = "tab", defaultValue = "doing") String tab,
+			HttpSession session, RedirectAttributes ra) {
+		int r = fieldService.deleteField(userId(session), userGu(session), listId);
+		ra.addFlashAttribute("msg", r > 0 ? "리스트를 삭제했습니다."
+				: r < 0 ? "현장 확인 기록이 있는 리스트는 삭제할 수 없습니다. (건물 확인 이력을 지키기 위해)" : "리스트를 찾을 수 없습니다.");
+		return "redirect:fieldlist.do?tab=" + ("done".equals(tab) ? "done" : "doing");
+	}
+
 	// POST fieldedit.do : listId, title, moveMode(walk/transit/car), factorIds(순서대로) → redirect:fielddetail.do
 	@PostMapping("fieldedit.do")
 	public String edit(@RequestParam(value = "listId", defaultValue = "0") long listId,
-			@RequestParam("title") String title,
+			@RequestParam(value = "title", required = false) String title,   // 비우면 "새 리스트N" (FieldService.nextAutoTitle)
 			@RequestParam(value = "moveMode", required = false) String moveMode,
 			@RequestParam(value = "factorIds", required = false) List<Long> factorIds,
 			HttpSession session, RedirectAttributes ra) {
