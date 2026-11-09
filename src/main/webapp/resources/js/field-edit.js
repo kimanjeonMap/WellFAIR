@@ -4,6 +4,8 @@
  *  - [최적 동선으로 정렬] : FieldMap.optimizeRoute(출발점, 미확인 건물) — 확인 완료 건물은 앞에 그대로 둔다
  *  - 출발점 : 구청(선택, 기본 = 첫 건물의 구). 저장되지 않고 순서 계산·시간 표시에만 쓴다
  *  - 지도 : 출발 핀 + 번호 핀 + 점선, 나머지 보관함 건물은 빈 원
+ *  - 경로 (TMAP) : 점선을 먼저 그리고, 0.8초 동안 더 바뀌지 않으면 api/field/walk.do 로 고른 이동수단(도보 · 대중교통 · 자동차) 경로를 받아 바꾼다
+ *                      (담기 · 빼기 · 순서 바꾸기 때마다 바로 부르지 않게. 실패하면 점선 그대로)
  */
 $(function () {
   var D = window.FE_DATA, esc = Common.esc, FM = window.FieldMap;
@@ -22,7 +24,8 @@ $(function () {
 
   /* ---------- 지도 ---------- */
   var hasMap = !!(window.naver && naver.maps && naver.maps.Map);
-  var map = null, line = null, marks = [], pop = null;
+  var map = null, line = null, marks = [], pop = null, walkTimer = null, walkSeq = 0;
+  var $walkInfo = $('<div class="map-float tc walk-info"></div>').hide().appendTo('.fe-map');
   if (hasMap) {
     var c = items[0] || D.pick[0] || start();
     map = new naver.maps.Map('map', { center: new naver.maps.LatLng(c.lat, c.lng), zoom: 15, zoomControl: false, mapDataControl: false, scaleControl: false });
@@ -82,6 +85,28 @@ $(function () {
       var path = [new naver.maps.LatLng(s.lat, s.lng)].concat(items.map(function (it) { return new naver.maps.LatLng(it.lat, it.lng); }));
       line = new naver.maps.Polyline({ map: map, path: path, strokeColor: '#4a8fe0', strokeWeight: 3, strokeStyle: 'shortdash', strokeOpacity: 0.9, zIndex: 50 });
     }
+    loadWalk(s);
+  }
+
+  /* 도보 경로 (TMAP) : 마지막 변경 0.8초 뒤 한 번. 늦게 온 응답(그 사이 또 바뀜)은 버린다 */
+  function loadWalk(s) {
+    clearTimeout(walkTimer);
+    var my = ++walkSeq;
+    $walkInfo.hide();
+    if (!items.length) return;
+    var points = [s].concat(items.map(function (it) { return { lat: it.lat, lng: it.lng }; }));
+    walkTimer = setTimeout(function () {
+      $walkInfo.text('경로 찾는 중…').show();
+      FM.walkPath(points, mode).done(function (r) {
+        if (my !== walkSeq || !live()) return;
+        if (line) line.setMap(null);
+        line = FM.drawWalk(map, r, 4);
+        $walkInfo.html(FM.walkText(r)).show();
+      }).fail(function (msg) {
+        if (my !== walkSeq) return;
+        if (msg) $walkInfo.text(msg + ' (직선으로 표시)').show(); else $walkInfo.hide();
+      });
+    }, 800);
   }
 
   /* 빈 원 → 담기 말풍선 */

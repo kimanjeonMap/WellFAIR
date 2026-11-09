@@ -6,6 +6,7 @@ $(function () {
   /* 현장 확인 앱으로 보내기 버튼은 나중에 따로 만든다 (지금은 [현장 확인 리스트로 돌아가기]) */
 
   /* ---------- 이동수단 전환 ---------- */
+  var loadRoute = function () {};   // 지도가 준비되면 아래에서 채운다 (TMAP 경로 다시 받기)
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function applyMode(mode) {
     $('#routeModes > div').removeClass('on').filter('[data-mode="' + mode + '"]').addClass('on');
@@ -21,6 +22,7 @@ $(function () {
       if (!res || !res.ok) { Common.toast('이동수단을 저장하지 못했습니다.'); return; }
       R.mode = mode;
       applyMode(mode);
+      loadRoute(mode);
       Common.toast({ walk: '도보', transit: '대중교통', car: '자동차' }[mode] + ' 기준으로 저장했습니다.');
     });
   });
@@ -47,7 +49,28 @@ $(function () {
     path.push(new naver.maps.LatLng(it.lat, it.lng));
   });
   if (path.length > 1) {
-    new naver.maps.Polyline({ map: map, path: path, strokeColor: '#4a8fe0', strokeWeight: 4, strokeStyle: 'shortdash', strokeOpacity: 0.95, zIndex: 50 });
+    var dash = new naver.maps.Polyline({ map: map, path: path, strokeColor: '#4a8fe0', strokeWeight: 4, strokeStyle: 'shortdash', strokeOpacity: 0.95, zIndex: 50 });
+    /* 경로 (TMAP) : 고른 이동수단으로 받아서 점선을 바꾼다. 이동수단을 바꾸면 다시 받는다 (같은 구간은 서버가 기억). 실패하면 점선 그대로 + 안내 */
+    var $walkInfo = $('<div class="map-float tc walk-info"></div>').appendTo('.fd-map');
+    var pts = (start ? [start] : []).concat(items).map(function (p) { return { lat: p.lat, lng: p.lng }; });
+    var routeLine = null, routeSeq = 0;
+    loadRoute = function (mode) {
+      var my = ++routeSeq;
+      $walkInfo.text('경로 찾는 중…').show();
+      FM.walkPath(pts, mode).done(function (r) {
+        if (my !== routeSeq || !map) return;
+        dash.setMap(null);
+        if (routeLine) routeLine.setMap(null);
+        routeLine = FM.drawWalk(map, r, 5);
+        $walkInfo.html(FM.walkText(r));
+      }).fail(function (msg) {
+        if (my !== routeSeq) return;
+        if (routeLine) { routeLine.setMap(null); routeLine = null; }
+        dash.setMap(map);
+        if (msg) $walkInfo.text(msg + ' (직선으로 표시)'); else $walkInfo.hide();
+      });
+    };
+    loadRoute(R.mode || 'walk');
     var b = new naver.maps.LatLngBounds(path[0], path[0]);
     path.forEach(function (p) { b.extend(p); });
     map.fitBounds(b, { top: 40, right: 400, bottom: 40, left: 40 });
