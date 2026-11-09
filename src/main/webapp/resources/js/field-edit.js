@@ -6,6 +6,7 @@
  *  - 지도 : 출발 핀 + 번호 핀 + 점선, 나머지 보관함 건물은 빈 원
  *  - 경로 (TMAP) : 점선을 먼저 그리고, 0.8초 동안 더 바뀌지 않으면 api/field/walk.do 로 고른 이동수단(도보 · 대중교통 · 자동차) 경로를 받아 바꾼다
  *                      (담기 · 빼기 · 순서 바꾸기 때마다 바로 부르지 않게. 실패하면 점선 그대로)
+ *    경로가 오면 오른쪽 목록의 구간별 분 · 소요시간 상자(고른 수단) · 머리글 거리도 TMAP 값으로 (render 가 직선 추정을 먼저 쓰고 덮어쓴다)
  */
 $(function () {
   var D = window.FE_DATA, esc = Common.esc, FM = window.FieldMap;
@@ -48,7 +49,7 @@ $(function () {
         + '<span class="drag" title="끌어서 순서 바꾸기">⋮⋮</span>'
         + '<span class="num' + (it.checked ? ' done' : '') + '">' + (it.checked ? '✓' : (i + 1)) + '</span>'
         + '<span>' + esc(it.title) + ' <span class="muted">' + it.score + '점</span></span>'
-        + '<span class="leg">' + (i === 0 ? esc(s.name) + '에서 ' : '이전 지점에서 ') + min + '분 (' + leg.toFixed(1) + 'km)</span>'
+        + '<span class="leg" data-from="' + (i === 0 ? esc(s.name) + '에서 ' : '이전 지점에서 ') + '">' + (i === 0 ? esc(s.name) + '에서 ' : '이전 지점에서 ') + min + '분 (' + leg.toFixed(1) + 'km)</span>'
         + (it.checked ? '<span class="muted" style="font-size:12px">확인 완료</span>' : '<button type="button" class="rm">빼기 ×</button>') + '</div>';
     }).join('');
     $('#feItems').html(html || '<div class="empty">왼쪽에서 건물을 체크하거나 지도의 빈 원을 눌러 담으세요.</div>');
@@ -102,11 +103,24 @@ $(function () {
         if (line) line.setMap(null);
         line = FM.drawWalk(map, r, 4);
         $walkInfo.html(FM.walkText(r)).show();
+        applyRoute(s, r);
       }).fail(function (msg) {
         if (my !== walkSeq) return;
         if (msg) $walkInfo.text(msg + ' (직선으로 표시)').show(); else $walkInfo.hide();
       });
     }, 800);
+  }
+
+  /* TMAP 응답으로 목록 · 소요시간 상자 숫자 교체. legs[i] = 출발→1, 1→2 … = items[i] 줄 */
+  function applyRoute(s, r) {
+    $('#feItems .fe-item').each(function (i) {
+      var leg = (r.legs || [])[i]; if (!leg) return;
+      var $l = $(this).find('.leg');
+      $l.text($l.data('from') + Math.max(1, Math.round(leg.time / 60)) + '분 (' + (leg.distance / 1000).toFixed(1) + 'km' + (leg.straight ? ' · 직선' : '') + ')');
+    });
+    var min = Math.max(1, Math.round(r.totalTime / 60));
+    $({ walk: '#tWalk', transit: '#tTransit', car: '#tCar' }[r.mode] || '#tWalk').text(min);
+    $('#routeCap').text(s.name + ' 출발 · ' + items.length + '곳 · TMAP ' + ({ walk: '도보', transit: '대중교통', car: '자동차' }[r.mode] || '도보') + ' ' + (r.totalDistance / 1000).toFixed(1) + 'km');
   }
 
   /* 빈 원 → 담기 말풍선 */

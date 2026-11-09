@@ -31,7 +31,7 @@
     <%-- 확대 · 축소 : 네이버 기본 컨트롤(구 · 동 · 부동산 단위 표가 붙는) 대신 지도 화면과 같은 버튼 --%>
     <div class="map-ctrl"><button type="button" id="zoomIn" title="확대">+</button><button type="button" id="zoomOut" title="축소">−</button></div>
     <div class="card route-card">
-      <div class="card-head"><h3>경로 · 소요시간</h3><small><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳</small></div>
+      <div class="card-head"><h3>경로 · 소요시간</h3><small id="rtCap"><c:out value="${startName}"/> 출발 · ${field.itemCnt}곳 · 직선거리 추정</small></div>
       <%-- 이동수단 : 저장된 move_mode 에 on. 세 칸 다 눌러서 바꿀 수 있고 바꾸면 api/field/mode.do 로 저장 + 아래 시간 다시 계산 (5-1) --%>
       <c:set var="mm" value="${empty field.moveMode ? 'WALK' : field.moveMode}"/>
       <%@ include file="/WEB-INF/views/include/mode-icons.jspf" %>
@@ -41,7 +41,7 @@
         <div data-mode="car" class="${mm == 'CAR' ? 'on' : ''}" title="자동차 20km/h">${icoCar}자동차<b>${carMin}<small>분</small></b></div>
       </div>
       <div class="route-stats">
-        <div>이동 거리<b>${km}km</b></div>
+        <div>이동 거리<b id="rtKm">${km}km</b></div>
         <div>현장 확인 예상<b>${checkMin}분 <small>(${field.itemCnt}동 × 20분)</small></b></div>
         <div>총 소요<b id="rtTotal"><c:out value="${totalText}"/></b></div>
         <div>출발 → 예상 종료<b id="rtEnd">09:30 → ${endTime}</b></div>
@@ -61,7 +61,7 @@
           <td><div class="name"><a href="${ctx}/archivedetail.do?bldId=${it.bldId}" title="건물 확인 이력"><c:out value="${it.title}"/></a></div><div class="addr"><c:out value="${it.addr}"/></div></td>
           <td class="muted"><c:out value="${it.buildingInfo}"/></td>
           <td><c:forEach var="f" items="${fn:split(it.factorText, '·')}"><span class="tag"><c:out value="${fn:trim(f)}"/></span></c:forEach></td>
-          <td><c:choose><c:when test="${s.first}"><c:out value="${startName}"/>에서 </c:when><c:otherwise>이전 지점에서 </c:otherwise></c:choose><span class="leg-min" data-km="${it.legKm}">${it.legMin}</span>분 <span class="muted">(${it.legKm}km)</span></td>
+          <td><c:choose><c:when test="${s.first}"><c:out value="${startName}"/>에서 </c:when><c:otherwise>이전 지점에서 </c:otherwise></c:choose><span class="leg-min" data-km="${it.legKm}">${it.legMin}</span>분 <span class="muted leg-km">(${it.legKm}km)</span></td>
           <td><c:out value="${empty it.welfNm ? '-' : it.welfNm}"/> <span class="muted"><fmt:formatNumber value="${it.welfDist / 1000}" maxFractionDigits="1"/>km</span></td>
           <td>
             <c:choose>

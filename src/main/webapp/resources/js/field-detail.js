@@ -1,6 +1,8 @@
 /* 현장 확인 상세 (fielddetail.jsp) : 출발 핀 + 번호 핀 + 점선 경로. 앱 보내기 버튼은 연동 예정
  *  - 소요시간 카드의 이동수단 3칸은 다 누를 수 있다. 누르면 api/field/mode.do 로 survey_list.move_mode 저장 후
- *    총 소요 · 예상 종료 · 구간별 분을 그 수단(도보 4 / 대중교통 15 / 자동차 20 km/h, 직선 × 1.3)으로 다시 계산 (5-1) */
+ *    총 소요 · 예상 종료 · 구간별 분을 그 수단(도보 4 / 대중교통 15 / 자동차 20 km/h, 직선 × 1.3)으로 다시 계산 (5-1)
+ *  - TMAP 경로(api/field/walk.do)가 오면 카드의 이동 거리 · 총 소요 · 예상 종료 · 구간별 분도 TMAP 값으로 바꾼다 (지도 위 안내줄과 같은 숫자).
+ *    못 받으면 직선 추정 그대로 (applyMode) */
 $(function () {
   var items = window.FD_ITEMS || [], start = window.FD_START, FM = window.FieldMap, R = window.FD_ROUTE || {};
   /* 현장 확인 앱으로 보내기 버튼은 나중에 따로 만든다 (지금은 [현장 확인 리스트로 돌아가기]) */
@@ -14,6 +16,25 @@ $(function () {
     $('#rtTotal').text(total >= 60 ? Math.floor(total / 60) + '시간 ' + (total % 60) + '분' : total + '분');
     $('#rtEnd').text('09:30 → ' + pad(Math.floor(end / 60) % 24) + ':' + pad(end % 60));
     $('.leg-min').each(function () { $(this).text(FM.minutes(Number($(this).data('km')) || 0, mode)); });
+    $('.leg-km').each(function () { $(this).text('(' + $(this).closest('td').find('.leg-min').data('km') + 'km)'); });
+    $('#rtKm').text((R.km || 0) + 'km');
+    $('#rtCap').text(capBase + ' · 직선거리 추정');
+  }
+  var capBase = $.trim($('#rtCap').text()).replace(/ · 직선거리 추정$/, '');
+  function timeText(min) { return min >= 60 ? Math.floor(min / 60) + '시간 ' + (min % 60) + '분' : min + '분'; }
+  /* TMAP 응답(r) 으로 카드 숫자 교체. legs[i] = 출발→1, 1→2 … 라 표의 i 번째 줄과 같은 순서 */
+  function applyRoute(r) {
+    var move = Math.max(1, Math.round(r.totalTime / 60)), total = move + (R.checkMin || 0), end = 9 * 60 + 30 + total;
+    $('#rtKm').text((r.totalDistance / 1000).toFixed(1) + 'km');
+    $('#rtTotal').text(timeText(total));
+    $('#rtEnd').text('09:30 → ' + pad(Math.floor(end / 60) % 24) + ':' + pad(end % 60));
+    $('#routeModes > div.on b').html(move + '<small>분</small>');
+    $('.leg-min').each(function (i) {
+      var leg = (r.legs || [])[i]; if (!leg) return;
+      $(this).text(Math.max(1, Math.round(leg.time / 60)));
+      $(this).closest('td').find('.leg-km').text('(' + (leg.distance / 1000).toFixed(1) + 'km' + (leg.straight ? ' · 직선' : '') + ')');
+    });
+    $('#rtCap').text(capBase + ' · TMAP ' + ({ walk: '도보', transit: '대중교통', car: '자동차' }[r.mode] || '도보') + ' 경로');
   }
   $('#routeModes').on('click', '> div', function () {
     var mode = $(this).data('mode');
@@ -63,10 +84,12 @@ $(function () {
         if (routeLine) routeLine.setMap(null);
         routeLine = FM.drawWalk(map, r, 5);
         $walkInfo.html(FM.walkText(r));
+        applyRoute(r);
       }).fail(function (msg) {
         if (my !== routeSeq) return;
         if (routeLine) { routeLine.setMap(null); routeLine = null; }
         dash.setMap(map);
+        applyMode(R.mode || 'walk');   // 카드는 직선 추정으로 되돌림
         if (msg) $walkInfo.text(msg + ' (직선으로 표시)'); else $walkInfo.hide();
       });
     };
