@@ -4,11 +4,7 @@
  *  - [최적 동선으로 정렬] : FieldMap.optimizeRoute(출발점, 미확인 건물) — 확인 완료 건물은 앞에 그대로 둔다
  *  - 출발점 : 구청(선택, 기본 = 첫 건물의 구). 저장되지 않고 순서 계산·시간 표시에만 쓴다
  *  - 지도 : 출발 핀 + 번호 핀 + 점선, 나머지 보관함 건물은 빈 원
-<<<<<<< HEAD
- *  - 도보 경로 (TMAP) : 점선을 먼저 그리고, 0.8초 동안 더 바뀌지 않으면 api/field/walk.do 로 실제 도보 경로를 받아 실선으로 바꾼다
-=======
  *  - 경로 (TMAP) : 점선을 먼저 그리고, 0.8초 동안 더 바뀌지 않으면 api/field/walk.do 로 고른 이동수단(도보 · 대중교통 · 자동차) 경로를 받아 바꾼다
->>>>>>> 41792602687852f26f9968d59f66ac24227def2c
  *                      (담기 · 빼기 · 순서 바꾸기 때마다 바로 부르지 않게. 실패하면 점선 그대로)
  */
 $(function () {
@@ -100,13 +96,8 @@ $(function () {
     if (!items.length) return;
     var points = [s].concat(items.map(function (it) { return { lat: it.lat, lng: it.lng }; }));
     walkTimer = setTimeout(function () {
-<<<<<<< HEAD
-      $walkInfo.text('도보 경로 찾는 중…').show();
-      FM.walkPath(points).done(function (r) {
-=======
       $walkInfo.text('경로 찾는 중…').show();
       FM.walkPath(points, mode).done(function (r) {
->>>>>>> 41792602687852f26f9968d59f66ac24227def2c
         if (my !== walkSeq || !live()) return;
         if (line) line.setMap(null);
         line = FM.drawWalk(map, r, 4);

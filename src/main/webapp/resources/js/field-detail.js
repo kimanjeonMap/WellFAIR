@@ -50,19 +50,6 @@ $(function () {
   });
   if (path.length > 1) {
     var dash = new naver.maps.Polyline({ map: map, path: path, strokeColor: '#4a8fe0', strokeWeight: 4, strokeStyle: 'shortdash', strokeOpacity: 0.95, zIndex: 50 });
-<<<<<<< HEAD
-    /* 도보 경로 (TMAP) : 받아오면 점선을 실제 도보 경로(실선)로 바꾼다. 실패하면 점선 그대로 + 안내 */
-    var $walkInfo = $('<div class="map-float tc walk-info">도보 경로 찾는 중…</div>').appendTo('.fd-map');
-    var pts = (start ? [start] : []).concat(items).map(function (p) { return { lat: p.lat, lng: p.lng }; });
-    FM.walkPath(pts).done(function (r) {
-      if (!map) return;
-      dash.setMap(null);
-      FM.drawWalk(map, r, 5);
-      $walkInfo.html(FM.walkText(r));
-    }).fail(function (msg) {
-      if (msg) $walkInfo.text(msg + ' (직선으로 표시)'); else $walkInfo.remove();
-    });
-=======
     /* 경로 (TMAP) : 고른 이동수단으로 받아서 점선을 바꾼다. 이동수단을 바꾸면 다시 받는다 (같은 구간은 서버가 기억). 실패하면 점선 그대로 + 안내 */
     var $walkInfo = $('<div class="map-float tc walk-info"></div>').appendTo('.fd-map');
     var pts = (start ? [start] : []).concat(items).map(function (p) { return { lat: p.lat, lng: p.lng }; });
@@ -84,7 +71,6 @@ $(function () {
       });
     };
     loadRoute(R.mode || 'walk');
->>>>>>> 41792602687852f26f9968d59f66ac24227def2c
     var b = new naver.maps.LatLngBounds(path[0], path[0]);
     path.forEach(function (p) { b.extend(p); });
     map.fitBounds(b, { top: 40, right: 400, bottom: 40, left: 40 });
