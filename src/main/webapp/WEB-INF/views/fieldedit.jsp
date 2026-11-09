@@ -1,7 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
-<c:set var="pageTitle" value="현장확인 리스트 수정"/>
+<c:set var="pageTitle" value="현장 확인 리스트 편집"/>
 <c:set var="pageCss" value="pages"/>
 <c:set var="activeMenu" value="field"/>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
@@ -13,7 +13,7 @@
 
 <div class="page">
   <div class="page-head" style="margin-bottom:23px">
-    <h1>현장확인 리스트 ${field.surveyId > 0 ? '수정' : '만들기'}</h1>
+    <h1>현장 확인 리스트 ${field.surveyId > 0 ? '편집' : '만들기'}</h1>
     <div class="right"><a class="btn btn-primary" id="btnBackList" href="${ctx}/fieldlist.do">‹ 목록으로</a></div>
   </div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>

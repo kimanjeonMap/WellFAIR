@@ -19,7 +19,7 @@
       <div class="sub"><c:out value="${field.createdAt}"/> <c:out value="${field.title}"/> · 건물 ${field.itemCnt}동 · 담당 <c:out value="${sessionScope.loginMember.userNm}"/> <c:out value="${sessionScope.loginMember.rankNm}"/></div>
     </div>
     <div class="right">
-      <a class="btn btn-light" href="${ctx}/fieldedit.do?listId=${field.surveyId}">수정</a>
+      <a class="btn btn-light" href="${ctx}/fieldedit.do?listId=${field.surveyId}">편집</a>
       <a class="btn btn-primary btn-wide" href="${ctx}/fieldlist.do">현장 확인 리스트로 돌아가기</a>
     </div>
   </div>
@@ -76,7 +76,7 @@
           </td>
         </tr>
       </c:forEach>
-      <c:if test="${empty field.items}"><tr><td colspan="7" class="empty">담긴 건물이 없습니다. "수정"에서 보관함 건물을 담으세요.</td></tr></c:if>
+      <c:if test="${empty field.items}"><tr><td colspan="7" class="empty">담긴 건물이 없습니다. "편집"에서 보관함 건물을 담으세요.</td></tr></c:if>
       </tbody>
     </table>
   </div>

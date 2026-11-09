@@ -48,9 +48,9 @@
         <div class="n">${f.itemCnt}동</div>
         <div class="prog"><i><b style="width:${f.progressPct}%"></b></i><span>${f.doneCnt}/${f.itemCnt}</span></div>
         <div class="fl-actions">
-          <a class="btn btn-primary btn-sm" href="${ctx}/fieldedit.do?listId=${f.surveyId}">수정</a>
+          <a class="btn btn-primary btn-sm" href="${ctx}/fieldedit.do?listId=${f.surveyId}">편집</a>
           <a class="btn btn-line btn-sm" href="${ctx}/fielddetail.do?listId=${f.surveyId}">상세보기</a>
-          <button type="button" class="caret" title="펼치기">⌄</button>
+          <button type="button" class="caret" title="펼치기" aria-label="펼치기"></button>
         </div>
       </div>
       <div class="fl-body">
@@ -63,7 +63,7 @@
             <span class="badge ${it.checked ? 'done' : 'doing'}">${it.checked ? '확인 완료' : '미확인'}</span>
           </div>
         </c:forEach>
-        <c:if test="${empty f.items}"><div class="muted" style="padding:8px 10px">"수정"에서 보관함 건물을 담으세요.</div></c:if>
+        <c:if test="${empty f.items}"><div class="muted" style="padding:8px 10px">"편집"에서 보관함 건물을 담으세요.</div></c:if>
         <div class="fl-body-foot">
           <c:choose>
             <c:when test="${f.doneCnt > 0}"><button type="button" class="fl-del" disabled title="현장 확인 기록이 있는 리스트는 건물 확인 이력을 지키기 위해 삭제할 수 없습니다">리스트 삭제</button></c:when>

@@ -91,10 +91,10 @@ $(function () {
     placeRefetch();
     $('#btnRefetch').addClass('show');
   }
-  /* [이 지역에서 재검색] : 네이버 지도처럼 하단 가운데. 범례(왼쪽 아래, 줄 수에 따라 높이가 바뀜) 바로 위 14px 로 띄워 겹치지 않게 */
+  /* [이 지역에서 재검색] : 화면 정중앙 하단 (CSS fixed). 범례(왼쪽 아래, 줄 수에 따라 높이가 바뀜) 위로 30px 띄워 겹치지 않게 */
   function placeRefetch() {
     var $lg = $('#legend'), h = $lg.is(':visible') ? $lg.outerHeight() : 0;
-    $('#btnRefetch').css('bottom', (h ? 12 + h + 14 : 24) + 'px');
+    $('#btnRefetch').css('bottom', (h ? 12 + h + 30 : 40) + 'px');
   }
   $('#btnRefetch').on('click', function () {
     if (!live()) return;
@@ -388,8 +388,7 @@ $(function () {
     var d = dongOf($row.attr('data-sgg'), $row.attr('data-emd')), $a = $('#dmAdm').empty();
     $('#dmEmd .dm-row').removeClass('hover'); $row.addClass('hover');
     if (!d || !d.adms.length) { $a.hide(); return; }
-    var sameGu = d.sggCd === state.gu, whole = sameGu && d.emdNm === state.dong && !state.adms.length;
-    $a.append('<div class="dm-row dm-all' + (whole ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '" data-adm="">' + esc(d.emdNm) + ' 전체</div>');
+    var sameGu = d.sggCd === state.gu;   // 법정동 하나 전체는 왼쪽 법정동 줄을 누르면 된다 ("○○동 전체" 줄은 없앰)
     d.adms.forEach(function (a) {
       var on = sameGu && state.adms.indexOf(admKey(d.emdNm, a.admNm)) >= 0;
       $a.append('<div class="dm-row dm-multi' + (on ? ' sel' : '') + '" data-sgg="' + d.sggCd + '" data-emd="' + esc(d.emdNm) + '" data-adm="' + esc(a.admNm) + '">'
@@ -453,7 +452,6 @@ $(function () {
     state.dong = '';
     if (guChanged) { applyArea(true, $row.attr('data-emd')); return; }
     $row.toggleClass('sel', i < 0);
-    $('#dmAdm .dm-all').removeClass('sel');
     $('#dmEmd .dm-row').each(function () {
       var $r = $(this), d = dongOf($r.attr('data-sgg'), $r.attr('data-emd'));
       $r.toggleClass('sel', d ? emdHasSel(d) : !state.adms.length);

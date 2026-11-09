@@ -220,9 +220,10 @@
 .out-bar b { color: var(--warn); }
 .out-bar .btn { height: 28px; padding: 0 12px; font-size: 12px; }
 
-/* [이 지역에서 재검색] : 분석 뒤 지도를 옮기면 뜬다. 네이버 지도처럼 하단 가운데 (bottom 은 map-main.js placeRefetch 가 범례 위로 맞춤) */
+/* [이 지역에서 재검색] : 분석 뒤 지도를 옮기면 뜬다. 좌우 패널이 열리든 닫히든 늘 브라우저 화면 정중앙 (fixed).
+   bottom 은 map-main.js placeRefetch 가 범례 위로 맞춤 */
 .btn-refetch {
-  position: absolute; left: 50%; bottom: 92px; transform: translateX(-50%); z-index: 10;
+  position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%); z-index: 10;
   display: none; align-items: center; gap: 6px; height: 38px; padding: 0 18px; border-radius: 19px;
   border: 1px solid var(--primary); background: var(--bg-panel); color: var(--text); font-size: 13px; cursor: pointer;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .45);
@@ -322,11 +323,11 @@
 .right-panel.open { transform: none; visibility: visible; transition: transform .26s ease, visibility 0s; }
 /* 패널이 열리면 지도 위 오른쪽 요소들을 패널 왼쪽으로 비켜 준다 */
 .map-top, .map-ctrl { transition: left .26s ease, right .26s ease; }
-.out-bar, .btn-refetch { transition: left .26s ease; }
+.out-bar { transition: left .26s ease; }
 .map-layout:has(.right-panel.open) .map-top,
 .map-layout:has(.right-panel.open) .map-ctrl { right: 412px; }
-.map-layout:has(.right-panel.open) .out-bar,
-.map-layout:has(.right-panel.open) .btn-refetch { left: calc(50% - 200px); }
+/* .btn-refetch 는 여기서 비키지 않는다 : fixed 로 늘 브라우저 화면 정중앙 */
+.map-layout:has(.right-panel.open) .out-bar { left: calc(50% - 200px); }
 .map-layout:has(.right-panel.open) .map-legend { max-width: calc(100% - var(--lp-right) - 72px - 400px); }
 .rp-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .rp-head { display: flex; align-items: center; gap: 8px; height: 52px; flex: 0 0 52px; padding: 0 22px 0 24px; border-bottom: 1px solid #323338; }
