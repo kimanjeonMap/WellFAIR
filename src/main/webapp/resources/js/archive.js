@@ -62,13 +62,15 @@ $(function () {
     $('#addItemsForm').trigger('submit');
   });
 
-  /* 보관함에서 빼기 */
-  $('#btnDelete').on('click', function () {
-    var ids = $('.rowChk:checked').map(function () { return this.value; }).get();
+  /* 보관함에서 빼기 : 선택한 행 전체 [보관함에서 빼기] 또는 행마다 [저장 ▾] 메뉴 맨 아래 */
+  function deleteRows(ids) {
     if (!ids.length) return;
+    if (!confirm(ids.length + '건을 보관함에서 뺄까요?\n현장확인 리스트에 담긴 건물은 빠지지 않고 남습니다.')) return;
     $('#delIds').html(ids.map(function (id) { return '<input type="hidden" name="factorIds" value="' + id + '">'; }).join(''));
     $('#deleteForm').trigger('submit');
-  });
+  }
+  $('#btnDelete').on('click', function () { deleteRows($('.rowChk:checked').map(function () { return this.value; }).get()); });
+  $(document).on('click', '.row-del', function () { deleteRows([String($(this).data('factor'))]); });
 
   /* 행 클릭 → 05 건물 확인 이력 */
   $('#archiveTbl tbody').on('click', 'tr[data-id]', function (e) {

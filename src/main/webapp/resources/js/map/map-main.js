@@ -79,7 +79,9 @@ $(function () {
     var g = guOf(state.gu);
     $('#resultScope').text(state.bbox ? '지도 화면 안'
       : [g ? g.name : '전체 3개 구', state.dong].concat(state.adms.map(admOfKey)).filter(Boolean).join(' · '));
-    if (window.DongBoundary) DongBoundary.show(map, state.gu, state.dong, state.adms.map(admOfKey));   // 고른 지역 테두리만 (행정동 여러 개면 전부)
+    /* 법정동·행정동을 고르면 그 경계에 테두리 (행정동 여러 개면 전부). 구만 골랐거나 전체 구면 그리지 않는다 */
+    if (window.DongBoundary && (state.dong || state.adms.length)) DongBoundary.show(map, state.gu, state.dong, state.adms.map(admOfKey));
+    else if (window.DongBoundary) DongBoundary.show(null);
     if (MapMarker.filterGu) MapMarker.filterGu(state.gu, !!(state.dong || state.adms.length));       // 동을 고르면 구 색칠은 숨김
   }
   /* 지도를 옮겨도 리스트는 그대로 (5-1). 분석 뒤 사용자가 옮겼을 때만 [이 지역에서 재검색] 을 띄운다 */
@@ -303,7 +305,6 @@ $(function () {
     $('#panelRight').addClass('open');
     $('#detailView').hide(); $('#resultView').show();
     $('#btnRefetch').removeClass('show');
-    resize();
     loadGus();
     loadPoints();
     legendKey = null; renderLegend(modeOf(zoomNow()));
@@ -342,10 +343,6 @@ $(function () {
   /* reopenEmd : 구가 바뀌어 목록을 다시 받은 뒤에도 그 법정동의 행정동 열을 열어 둔다 (복수 선택 중) */
   function loadDongs(reopenEmd) {
     MapApi.dongs({ gu: state.gu }).done(function (list) {
-      /* 경계상 그 법정동과 안 겹치는 행정동(건물 좌표 오차로 붙은 것)은 메뉴에서 뺀다 */
-      if (window.DongBoundary && DongBoundary.validAdm) (list || []).forEach(function (d) {
-        d.adms = (d.adms || []).filter(function (a) { return DongBoundary.validAdm(d.sggCd, d.emdNm, a.admNm); });
-      });
       DONGS = list; renderDongMenu();
       if (reopenEmd) { var $r = $('#dmEmd .dm-row').filter(function () { return $(this).attr('data-emd') === reopenEmd; }); if ($r.length) showAdm($r); }
     });
@@ -507,7 +504,8 @@ $(function () {
   renderLegend(modeOf(zoomNow()));
   loadGus();
   loadChecked();
-  /* 05 [지도에서 보기] (map.do?bldId=) : 그 건물로 가서 상세 패널을 연다 */
+  /* 05 [지도에서 보기] (map.do?bldId=) : 그 건물로 가서 상세 패널을 연다. 구청 계정이 남의 구 건물을 열려 하면 서버가 bldId 를 비우고 안내만 (15단계 A-2) */
+  if (window.OPEN_MSG) Common.toast(window.OPEN_MSG);
   if (window.OPEN_BLD) {
     MapApi.building($.extend({}, criteria(), { bldId: window.OPEN_BLD })).done(function (d) {
       if (d && d.building) selectBuilding(d.building, true);

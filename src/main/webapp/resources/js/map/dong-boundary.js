@@ -32,6 +32,7 @@ window.DongBoundary = (function () {
     }
     if (admName) rings = find(window.GU_ADM_BOUNDARY[guCode], admName);
     if (!rings && dongName) rings = find(window.GU_DONG_BOUNDARY[guCode], dongName);
+    if (!rings && dongName) rings = find(window.GU_ADM_BOUNDARY[guCode], dongName);   // 메뉴의 법정동 이름이 행정동 이름인 경우 (예: 수궁동)
     if (!rings && !admName && !dongName && window.GU_BOUNDARY && GU_BOUNDARY[guCode]) rings = [GU_BOUNDARY[guCode]];
     return rings;
   }

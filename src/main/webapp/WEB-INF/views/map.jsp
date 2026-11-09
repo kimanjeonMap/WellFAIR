@@ -106,6 +106,8 @@
       <div class="wp-row" data-gw="bld"><div class="wp-name">건물 상태 <small>노후 · 위반건축물</small></div><b id="wv-bld"></b><input type="range" id="w-bld"></div>
       <div class="wp-row" data-gw="flood"><div class="wp-name">침수 위험 <small>침수 이력 · 저지대</small></div><b id="wv-flood"></b><input type="range" id="w-flood"></div>
       <div class="wp-row" data-gw="econ"><div class="wp-name">경제 여건 <small>저가 주택</small></div><b id="wv-econ"></b><input type="range" id="w-econ"></div>
+      <%-- 점수 규칙 안내 (10단계 규칙, 15단계 B-7 문구) --%>
+      <p class="wp-note">주거 공간은 지하·고시원·옥탑 중 하나라도 맞으면 가중치 전부, 건물 상태·침수 위험은 켠 요인 중 맞은 비율만큼, 경제 여건은 맞으면 가중치 전부. 합계 100점 만점.</p>
     </div>
   </aside>
 
@@ -192,6 +194,7 @@
   window.APP_SCORE_MIN = ${criteria.scoreMin};   // 기준점 (app.properties app.analysis.score-min) → map-config SCORE_MIN
   window.LOCK_GU = '<c:out value="${lockGu}"/>';   // 구청 계정이면 소속 구 코드, 서울시청이면 
   window.OPEN_BLD = '<c:out value="${openBldId}"/>';   // map.do?bldId= (05 지도에서 보기)
+  window.OPEN_MSG = '<c:out value="${openMsg}"/>';     // 남의 구 건물 · 없는 건물이면 상세 대신 이 안내만 (15단계 A-2)
 </script>
 <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=<c:out value='${naverClientId}'/>"></script>
 <script src="${pageContext.request.contextPath}/resources/js/common.js"></script>

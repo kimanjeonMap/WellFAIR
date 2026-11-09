@@ -132,6 +132,7 @@
 .wp-row > b { height: 22px; line-height: 20px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; font-weight: 700; min-width: 48px; text-align: center; }
 .wp-row input { grid-column: 1 / -1; width: 100%; }
 .wp-row.locked .wp-name, .wp-row.locked > b { color: var(--text-3); }
+.wp-note { margin: 10px 0 0; font-size: 11px; line-height: 1.55; color: var(--text-3); }   /* 점수 규칙 안내 (15단계 B-7) */
 
 /* 패널 접기 손잡이 */
 .side-toggle {
@@ -180,7 +181,7 @@
   font-size: 12px; color: var(--text-2);
 }
 .chip b { color: var(--text); }
-.chip-toggle { cursor: pointer; margin-left: 6px; }
+.chip-toggle { cursor: pointer; margin-left: 6px; white-space: nowrap; flex-shrink: 0; }
 .chip-toggle .ck { width: 14px; height: 14px; border-radius: var(--radius); border: 1px solid var(--line); display: grid; place-items: center; font-size: 10px; color: transparent; }
 .chip-toggle.on { border-color: var(--primary); color: var(--text); }
 .chip-toggle.on .ck { background: var(--primary); border-color: var(--primary); color: #fff; }
@@ -314,15 +315,26 @@
 }
 
 /* ---------- 오른쪽 패널 ---------- */
+/* 지도 위에 덮는다 : 지도 크기가 안 바뀌어야 여닫을 때 지도가 움찔하지 않는다 (2026-11-08) */
 .right-panel {
-  width: 400px; flex: 0 0 400px;
-  margin-right: -400px;
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 20;
+  width: 400px;
   display: flex; flex-direction: column;
   background: var(--bg-panel);
   border-left: 1px solid var(--line);
-  transition: margin-right .26s ease;
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform .26s ease, visibility 0s linear .26s;
 }
-.right-panel.open { margin-right: 0; }
+.right-panel.open { transform: none; visibility: visible; transition: transform .26s ease, visibility 0s; }
+/* 패널이 열리면 지도 위 오른쪽 요소들을 패널 왼쪽으로 비켜 준다 */
+.map-top, .map-ctrl { transition: left .26s ease, right .26s ease; }
+.out-bar, .btn-refetch { transition: left .26s ease; }
+.map-layout:has(.right-panel.open) .map-top,
+.map-layout:has(.right-panel.open) .map-ctrl { right: 412px; }
+.map-layout:has(.right-panel.open) .out-bar,
+.map-layout:has(.right-panel.open) .btn-refetch { left: calc(50% - 200px); }
+.map-layout:has(.right-panel.open) .map-legend { max-width: calc(100% - var(--lp-right) - 72px - 400px); }
 .rp-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .rp-head { display: flex; align-items: center; gap: 8px; height: 52px; flex: 0 0 52px; padding: 0 22px 0 24px; border-bottom: 1px solid #323338; }
 .rp-head h2 { font-size: 15px; font-weight: 700; flex: 1; }
@@ -352,6 +364,7 @@
 .rs-hh { margin-left: 8px; padding: 0 6px; border-radius: var(--radius); background: var(--bg-card); color: var(--text-2); font-size: 10.5px; }
 .rs-score { width: 58px; text-align: right; }
 .rs-score b { font-size: 15px; font-weight: 700; }
+.rs-score .rs-under { display: block; font-size: 10px; line-height: 1; margin-top: 2px; color: var(--text-3); font-style: normal; }   /* 검색 결과의 기준 미만 (15단계 C-9) */
 .rs-score .rs-track { display: block; height: 3px; margin-top: 6px; background: var(--line-soft); }
 .rs-score .rs-track i { display: block; height: 100%; background: var(--primary); }
 .rs-more { margin: 0 12px 12px; height: 36px; border: 1px solid var(--line); border-radius: var(--radius); background: none; color: var(--text-2); cursor: pointer; }
@@ -363,7 +376,9 @@
 .d-title-wrap { margin: 0 24px; padding: 14px 0 14px; border-bottom: 1px solid var(--line-soft); }
 .d-title-wrap h3 { font-size: 17px; font-weight: 700; }
 .d-sub { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--text-2); }
-.d-checked { padding: 4px 16px; border-radius: var(--radius); background: var(--primary); color: #fff; font-size: 11px; white-space: nowrap; }
+.d-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.d-checked { flex: 0 0 auto; margin-top: 2px; padding: 3px 10px; border-radius: var(--radius); background: var(--primary); color: #fff; font-size: 11px; line-height: 16px; white-space: nowrap; }
+.d-hist { flex: 0 0 auto; height: 28px; padding: 0 14px; font-size: 12px; font-weight: 600; }
 .d-score { margin-top: 8px; font-size: 13px; color: var(--text-2); }
 .d-score b { font-size: 20px; color: var(--text); margin-left: 4px; }
 .d-tabs { display: flex; border-bottom: 1px solid var(--line); }
@@ -425,6 +440,10 @@
 .rm-tbl th { background: var(--bg-card); color: var(--text-2); font-weight: 500; text-align: left; padding: 11px 14px; font-size: 12.5px; }
 .rm-tbl td { padding: 15px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 .rm-tbl .rm-flr { font-weight: 700; font-size: 15px; }
+/* 순위 + 가점 (12단계) : "1  42점", 가점에 올리면 내역 툴팁 */
+.rm-tbl .rm-rank { white-space: nowrap; width: 64px; }
+.rm-tbl .rm-rank b { font-size: 14px; font-weight: 700; margin-right: 6px; }
+.rm-tbl .rm-rank small { font-size: 11px; color: var(--text-2); border-bottom: 1px dotted var(--text-3); cursor: help; }
 .rm-tbl .tag { margin-right: 4px; }
 .tag.benefit { border-style: dashed; color: var(--text-3); background: transparent; }
 .rm-legend { margin: -4px 0 10px; font-size: 11px; }

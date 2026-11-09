@@ -49,6 +49,15 @@
 		 WHERE f.factor_id IN <foreach collection="list" item="id" open="(" separator="," close=")">#{id}</foreach>
 	</select>
 
+	<!-- 담으려는 factorId 중 내 보관함 것의 수 (15단계 D-10 : 남의 factorId 가 섞이면 저장 전체 취소) -->
+	<select id="countMyFactors" resultType="int">
+		SELECT COUNT(DISTINCT f.factor_id)
+		  FROM vulnerability_factor f
+		  JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
+		 WHERE l.user_id = #{userId} AND l.is_active = 1
+		   AND f.factor_id IN <foreach collection="factorIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+	</select>
+
 	<insert id="addField" parameterType="wellfair.to.FieldListTO" useGeneratedKeys="true" keyProperty="surveyId">
 		INSERT INTO survey_list (user_id, sgg_cd, title, move_mode) VALUES (#{userId}, #{sggCd}, #{title}, IFNULL(#{moveMode}, 'WALK'))
 	</insert>
@@ -96,6 +105,17 @@
 		<if test="factorIds != null and factorIds.size() > 0">
 		   AND factor_id NOT IN <foreach collection="factorIds" item="id" open="(" separator="," close=")">#{id}</foreach>
 		</if>
+	</delete>
+
+	<!-- 리스트 삭제 : 담긴 건물(survey_plan)은 FK CASCADE 로 같이 지워진다.
+	     현장 확인 기록이 하나라도 있으면 05 건물 확인 이력이 깨지므로 지우지 않는다 (0 리턴) -->
+	<select id="countFieldRecords" resultType="int">
+		SELECT COUNT(*) FROM survey_plan p JOIN survey_record r ON r.plan_id = p.plan_id WHERE p.survey_id = #{surveyId}
+	</select>
+	<delete id="deleteField">
+		DELETE FROM survey_list
+		 WHERE survey_id = #{surveyId} AND user_id = #{userId}
+		   AND NOT EXISTS (SELECT 1 FROM survey_plan p JOIN survey_record r ON r.plan_id = p.plan_id WHERE p.survey_id = #{surveyId})
 	</delete>
 
 	<!-- 항목 넣기 (이미 있으면 순서만) -->

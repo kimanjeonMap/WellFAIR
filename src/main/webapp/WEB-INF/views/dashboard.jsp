@@ -11,7 +11,7 @@
 <body>
 <%@ include file="/WEB-INF/views/include/header.jspf" %>
 
-<div class="page">
+<div class="page dash-page">
   <form class="page-head dash-head" method="get" action="${ctx}/dashboard.do">
     <h1>대시보드</h1>
     <div class="right">
@@ -35,10 +35,10 @@
 
   <%-- KPI 4 --%>
   <div class="kpi-grid">
-    <div class="card kpi"><div class="k-title"><i style="background:var(--ok)"></i>조사 대기 중</div><div class="k-val">${d.status.todo}<small>동</small></div><div class="k-sub">취약공간 ${d.total}동 중 현장 확인 전</div><span class="k-ico">⧗</span></div>
-    <div class="card kpi"><div class="k-title"><i style="background:var(--warn)"></i>조사 중</div><div class="k-val">${d.status.doing}<small>동</small></div><div class="k-sub">현장확인 리스트에 담겨 확인 중</div><span class="k-ico">⌖</span></div>
-    <div class="card kpi"><div class="k-title"><i style="background:var(--warn)"></i>현장 확인 리스트 잔여</div><div class="k-val">${d.listRemain}<small>개</small></div><div class="k-sub">남은 건물 ${d.listRemainBld}곳 · 전체 ${d.listTotalBld}곳</div><span class="k-ico">☰</span></div>
-    <div class="card kpi"><div class="k-title"><i style="background:var(--primary)"></i>최근 한 달 완료</div><div class="k-val">${d.monthDone}<small>건</small></div><div class="k-sub"><c:choose><c:when test="${d.monthDone >= d.prevMonthDone}">지난달보다 ${d.monthDone - d.prevMonthDone}건 늘었어요</c:when><c:otherwise>지난달보다 ${d.prevMonthDone - d.monthDone}건 줄었어요</c:otherwise></c:choose> · 누적 ${d.cumDone}건</div><span class="k-ico">✓</span></div>
+    <div class="card kpi"><div class="k-title"><i style="background:var(--ok)"></i>조사 대기 중</div><div class="k-val">${d.status.todo}<small>동</small></div><div class="k-sub">취약공간 ${d.total}동 중 현장 확인 전</div></div>
+    <div class="card kpi"><div class="k-title"><i style="background:var(--warn)"></i>조사 중</div><div class="k-val">${d.status.doing}<small>동</small></div><div class="k-sub">현장확인 리스트에 담겨 확인 중</div></div>
+    <div class="card kpi"><div class="k-title"><i style="background:var(--warn)"></i>현장 확인 리스트 잔여</div><div class="k-val">${d.listRemain}<small>개</small></div><div class="k-sub">남은 건물 ${d.listRemainBld}곳 · 전체 ${d.listTotalBld}곳</div></div>
+    <div class="card kpi"><div class="k-title"><i style="background:var(--primary)"></i>최근 한 달 완료</div><div class="k-val">${d.monthDone}<small>건</small></div><div class="k-sub"><c:choose><c:when test="${d.monthDone >= d.prevMonthDone}">지난달보다 ${d.monthDone - d.prevMonthDone}건 늘었어요</c:when><c:otherwise>지난달보다 ${d.prevMonthDone - d.monthDone}건 줄었어요</c:otherwise></c:choose> · 누적 ${d.cumDone}건</div></div>
   </div>
 
   <div class="dash-grid">
@@ -76,7 +76,7 @@
           <div class="mini-card">
             <div class="mc-top"><span class="badge"><c:out value="${f.guName}"/> <c:out value="${f.emdNm}"/></span><span>진행 중</span></div>
             <b><c:out value="${f.title}"/></b>
-            <div class="mc-sub"><c:out value="${f.firstAddr}"/></div>
+            <div class="mc-sub" title="<c:out value='${f.firstAddr}'/>"><c:out value="${f.firstAddr}"/></div>
             <div class="prog"><span class="muted">확인 진행</span><i><b style="width:${f.progressPct}%"></b></i><span>${f.doneCnt}/${f.itemCnt}</span></div>
             <div class="mc-foot"><span>남은 ${f.itemCnt - f.doneCnt}곳</span><a href="${ctx}/fielddetail.do?listId=${f.surveyId}">상세보기 ›</a></div>
           </div>

@@ -12,7 +12,10 @@
 <%@ include file="/WEB-INF/views/include/header.jspf" %>
 
 <div class="page">
-  <div class="page-head"><h1>현장확인 리스트 ${field.surveyId > 0 ? '수정' : '만들기'}</h1></div>
+  <div class="page-head" style="margin-bottom:23px">
+    <h1>현장확인 리스트 ${field.surveyId > 0 ? '수정' : '만들기'}</h1>
+    <div class="right"><a class="btn btn-primary" id="btnBackList" href="${ctx}/fieldlist.do">‹ 목록으로</a></div>
+  </div>
   <c:if test="${not empty msg}"><div class="flash"><c:out value="${msg}"/></div></c:if>
 
   <form method="post" action="${ctx}/fieldedit.do" id="editForm">
@@ -23,7 +26,7 @@
     <div class="fe-grid">
       <%-- 왼쪽 : 보관함 건물 --%>
       <div class="card">
-        <div class="card-head"><h3>보관함 건물 <span id="pickCnt">${fn:length(pickList)}</span></h3><small>체크하면 이 리스트에 담깁니다</small></div>
+        <div class="card-head"><h3>보관함 건물 <span id="pickCnt">${fn:length(pickList)}</span></h3></div>
         <div class="pick-list" id="pickList">
           <c:forEach var="p" items="${pickList}">
             <label class="pick-row" data-factor="${p.factorId}">
@@ -47,11 +50,10 @@
       <%-- 오른쪽 : 리스트 이름 · 순서 --%>
       <div class="card">
         <div class="card-head"><h3><c:out value="${empty field.title ? '새 현장확인 리스트' : field.title}"/></h3></div>
-        <div class="fe-title"><span>✎</span><input class="field" name="title" id="title" value="<c:out value='${field.title}'/>" placeholder="리스트 이름 (예: 가리봉동 반지하 밀집)" required></div>
+        <div class="fe-title"><span>✎</span><input class="field" name="title" id="title" value="<c:out value='${field.title}'/>" placeholder="리스트 이름 (예: 가리봉동 반지하 밀집)" maxlength="100" required></div>
         <div class="fe-tools">
-          <label>출발지 <select class="field sel-sm" id="startSel"><option value="11530">구로구청</option><option value="11470">양천구청</option><option value="11560">영등포구청</option></select></label>
+          <label class="fe-start">출발지 <select class="field sel-sm" id="startSel"><option value="11530">구로구청</option><option value="11470">양천구청</option><option value="11560">영등포구청</option></select></label>
           <button type="button" class="btn btn-line btn-sm" id="btnOptimize" title="출발지에서 가까운 순으로 초안을 만들고 2-opt 로 교차 구간을 풀어 다시 매깁니다 (직선거리)">⇅ 최적 동선으로 정렬</button>
-          <span class="muted" style="font-size:12px">⋮⋮ 를 끌어서 순서를 바꿀 수 있어요</span>
         </div>
         <div class="fe-items" id="feItems"></div>
         <div class="fe-foot">
@@ -73,11 +75,11 @@
     <div class="nmap" id="map"></div>
     <div class="map-float tl"><label class="chk"><input type="checkbox" id="onlyMine"> 리스트 건물만 보기 (<span id="mineCnt">0</span>)</label></div>
     <div class="map-float bl"><span><i class="lg-dot fill"></i>리스트에 담긴 건물</span><span><i class="lg-dot"></i>담을 수 있는 보관함 건물</span></div>
-    <div class="map-float br">
-      <div><small>이동 시간 (직선거리 × 1.3)</small><span id="routeCap" class="muted" style="font-size:12px">0곳</span></div>
-      <div><small>도보</small><b id="tWalk">0</b>분</div>
-      <div><small>자동차</small><b id="tCar">0</b>분</div>
-      <div><small>대중교통</small><b id="tTransit">0</b>분</div>
+    <%@ include file="/WEB-INF/views/include/mode-icons.jspf" %>
+    <div class="map-float br rt-box" id="rtBox">
+      <div class="rt" data-mode="walk" title="도보 (4km/h)">${icoWalk}<span><small>도보</small><b id="tWalk">0</b>분</span></div>
+      <div class="rt" data-mode="transit" title="대중교통 (15km/h)">${icoTransit}<span><small>대중교통</small><b id="tTransit">0</b>분</span></div>
+      <div class="rt" data-mode="car" title="자동차 (20km/h)">${icoCar}<span><small>자동차</small><b id="tCar">0</b>분</span></div>
     </div>
   </div>
 </div>

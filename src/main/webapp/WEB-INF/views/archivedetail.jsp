@@ -190,7 +190,7 @@
             <option value="">받는 담당자 (선택)</option>
             <c:forEach var="u" items="${users}"><c:if test="${u.userId != me.userId}"><option value="${u.userId}"><c:out value="${u.userNm}"/> <c:out value="${u.rankNm}"/> · <c:out value="${u.deptNm}"/></option></c:if></c:forEach>
           </select>
-          <textarea class="field" name="memo" id="memoText" rows="3" placeholder="예) 배수구 막힘은 주택과에 사진과 함께 전달했습니다." style="height:auto;padding:8px 12px"></textarea>
+          <textarea class="field" name="memo" id="memoText" rows="3" maxlength="500" placeholder="예) 배수구 막힘은 주택과에 사진과 함께 전달했습니다. (500자까지)" style="height:auto;padding:8px 12px"></textarea>
           <div class="f-foot" style="margin-top:8px"><button type="button" class="btn btn-line btn-sm" data-close="#memoForm">취소</button><button type="submit" class="btn btn-primary btn-sm">저장</button></div>
         </form>
         <button type="button" class="btn btn-line btn-block" id="btnHandover">담당자 변경(인수인계)</button>

@@ -28,7 +28,9 @@ window.Common = (function () {
         location.href = url('loginform.do');
         return;
       }
-      toast('서버 요청에 실패했습니다. (' + xhr.status + ')');
+      /* 403(관할 밖) · 400(가중치 등) · 500 은 GlobalExceptionHandler 가 {ok:false, msg} 로 준다 → 그 문구 그대로 */
+      var m = xhr.responseJSON && xhr.responseJSON.msg;
+      toast(m || '서버 요청에 실패했습니다. (' + xhr.status + ')');
     });
   }
 

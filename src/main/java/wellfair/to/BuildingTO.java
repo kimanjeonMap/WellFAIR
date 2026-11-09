@@ -50,4 +50,5 @@ public class BuildingTO {
 	// 상세에서만
 	private String checkedAt;   // 현장 확인 완료일 (없으면 null)
 	private int archiveCnt;     // 내 보관함에 있으면 1
+	private int visitCnt;       // 현장 방문 기록 수 (누가 갔든). 13단계 : 보관함에 있고 방문 0 → "저장됨" 안내만, 방문 있음 → "다시 저장 (점수 갱신)"
 }

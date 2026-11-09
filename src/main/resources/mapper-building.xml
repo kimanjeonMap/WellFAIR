@@ -185,7 +185,8 @@
 			<include refid="mapper-building.bboxWhere"/>
 			<if test="q != null and q != ''">AND (b.addr LIKE CONCAT('%', #{q}, '%') OR b.bld_nm LIKE CONCAT('%', #{q}, '%'))</if>
 		  ) t
-		 WHERE t.score >= #{scoreMin}
+		 <!-- 검색어(q)가 있으면 점수 기준을 무시하고 주소 · 건물명으로 찾는다 (15단계 C-9). 기준 미만은 화면이 "기준 미만" 으로 표시 -->
+		 <where><if test="q == null or q == ''">t.score >= #{scoreMin}</if></where>
 	</select>
 
 	<!-- 결과 리스트 : 한 페이지 -->
@@ -199,7 +200,8 @@
 			<include refid="mapper-building.bboxWhere"/>
 			<if test="q != null and q != ''">AND (b.addr LIKE CONCAT('%', #{q}, '%') OR b.bld_nm LIKE CONCAT('%', #{q}, '%'))</if>
 		  ) t
-		 WHERE t.score >= #{scoreMin}
+		 <!-- 검색어(q)가 있으면 점수 기준을 무시하고 주소 · 건물명으로 찾는다 (15단계 C-9). 기준 미만은 화면이 "기준 미만" 으로 표시 -->
+		 <where><if test="q == null or q == ''">t.score >= #{scoreMin}</if></where>
 		 ORDER BY
 		 <choose>
 		 	<when test="sort == 'old'">t.bld_age DESC, t.score DESC, t.vuln_hh_cnt DESC, t.priority_sum DESC, t.bld_id</when>
@@ -219,10 +221,16 @@
 		          JOIN vulnerability_list l ON l.vulnerability_id = f.vulnerability_id
 		         WHERE f.bld_id = t.bld_id AND l.is_active = 1
 		         <if test="userId != null">AND l.user_id = #{userId}</if>) archive_cnt
+		     , (SELECT COUNT(*) FROM visit_history vh WHERE vh.bld_id = t.bld_id) visit_cnt   /* 13단계 : 저장 버튼 문구 (저장됨 / 다시 저장) */
 		  FROM (
 			<include refid="mapper-building.scoredSelect"/>
 			   AND b.bld_id = #{bldId}
 		  ) t
+	</select>
+
+	<!-- 건물의 구 (구청 계정 관할 확인용, 15단계 A). 없는 건물이면 null -->
+	<select id="getBuildingSgg" parameterType="String" resultType="String">
+		SELECT b.sgg_cd FROM building b WHERE b.bld_id = #{bldId}
 	</select>
 
 </mapper>

@@ -11,6 +11,7 @@ $(function () {
   var byFactor = {};
   D.pick.forEach(function (p) { byFactor[p.factorId] = p; });
   var mode = ($('#modeSeg button.on').data('mode')) || 'walk';   // 저장된 이동수단 (survey_list.move_mode)
+  $('#rtBox .rt[data-mode=' + mode + ']').addClass('on');
 
   /* 출발점 (구청) */
   var $start = $('#startSel');
@@ -142,6 +143,7 @@ $(function () {
   $('#feItems').on('click', '.rm', function () { remove(Number($(this).closest('.fe-item').data('factor'))); });
   $('#modeSeg button').on('click', function () {
     $('#modeSeg button').removeClass('on'); $(this).addClass('on');
+    $('#rtBox .rt').removeClass('on').filter('[data-mode=' + $(this).data('mode') + ']').addClass('on');
     mode = $(this).data('mode');
     $('#moveMode').val(mode.toUpperCase());      // 저장 시 survey_list.move_mode
     render();
@@ -153,7 +155,19 @@ $(function () {
 
   $('#editForm').on('submit', function () {
     if (!$.trim($('#title').val())) { Common.toast('리스트 이름을 입력하세요.'); $('#title').trigger('focus'); return false; }
+    saving = true;
   });
+
+  /* [‹ 목록으로] : 저장 안 한 변경(이름 · 건물 · 순서 · 이동수단)이 있으면 한 번 묻는다 */
+  var saving = false;
+  function snapshot() { return [$.trim($('#title').val()), mode, items.map(function (it) { return it.factorId; }).join(',')].join('|'); }
+  var saved = snapshot();
+  $('#btnBackList').on('click', function (e) {
+    if (snapshot() !== saved && !confirm('저장하지 않은 변경 내용이 있습니다. 저장하지 않고 목록으로 돌아갈까요?')) e.preventDefault();
+  });
+  $(window).on('beforeunload', function () { if (!saving && snapshot() !== saved && !leaving) return '저장하지 않은 변경 내용이 있습니다.'; });
+  var leaving = false;
+  $('#btnBackList').on('click', function (e) { if (!e.isDefaultPrevented()) leaving = true; });
 
   render();
 });

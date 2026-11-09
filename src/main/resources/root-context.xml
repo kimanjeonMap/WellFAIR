@@ -31,4 +31,9 @@
 	 <bean id="sqlSession" class="org.mybatis.spring.SqlSessionTemplate">
 	 	<constructor-arg index="0" ref="sqlSessionFactoryBean"></constructor-arg>
 	 </bean>
+	 <!-- 트랜잭션 (15단계 D-10 : 현장확인 리스트 저장은 전부 되거나 전부 취소). @Transactional 은 servlet-context 의 tx:annotation-driven 이 켠다
+	      (Service 빈이 servlet-context 의 component-scan 에 있으므로 거기에 둬야 프록시가 걸린다) -->
+	 <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+	 	<property name="dataSource" ref="dataSource"/>
+	 </bean>
 </beans>

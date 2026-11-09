@@ -31,6 +31,7 @@ public class ResidentTO {
 	private String blindSpotYn;   // 사각지대 (복지 체계 밖, +15)
 	private String blindSpotType;
 	private int priority;         // 거주자 우선 점수 (mapper-resident priorityExpr)
+	private String priorityText;  // 가점 내역 "고위험고립 30 · 지하층 10 · 기초연금 3" (12단계 모달 툴팁, ResidentService 가 priorityExpr 와 같은 규칙으로)
 	private String supportType;   // 가구원 지원연계 (공적급여 · 민간자원 · 기타서비스, 여러 개면 ' · ' 로)  → 모달 "복지 연계" 원본 값
 	private String detectResult;  // 가구원 처리결과 (조치완료 · 단순상담 · 미처리 …)                       → 지원연계 없을 때 그대로
 	private List<String> tags = new ArrayList<>();      // 취약 유형 태그 (가점 요인)
