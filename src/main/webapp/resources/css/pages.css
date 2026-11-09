@@ -400,3 +400,8 @@
 /* 확대 · 축소 버튼 위치 (모양은 common.css .map-ctrl = 메인 지도와 같음) */
 .fd-map .map-ctrl { right: 16px; bottom: 15px; }   /* 현장확인 상세 : 소요시간 카드와 같은 오른쪽 선 */
 .fe-map .map-ctrl { right: 10px; top: 10px; }      /* 리스트 수정 : 오른쪽 아래는 소요시간 상자라 오른쪽 위 */
+
+/* 현장확인 지도 위 가운데 : TMAP 도보 경로 거리 · 시간 (field-map.js walkText). 오른쪽 위는 확대 버튼 자리 */
+.map-float.tc { left: 50%; top: 10px; transform: translateX(-50%); white-space: nowrap; }
+.walk-info { font-weight: 600; color: var(--text); }
+.walk-info small { font-weight: 400; color: var(--text-2); }
